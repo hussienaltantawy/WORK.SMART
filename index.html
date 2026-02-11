@@ -1452,29 +1452,132 @@ function clearDateError() {
         }
         
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-                letter-spacing: 4px;
+            /* Reduce body padding on mobile */
+            body {
+                padding: 5px 10px;
             }
             
+            /* Header adjustments */
+            header {
+                padding: 20px 15px;
+            }
+            
+            h1 {
+                font-size: 1.6rem;
+                letter-spacing: 2px;
+            }
+            
+            /* Tool boxes - better mobile spacing */
+            .tool-box {
+                padding: 20px 15px;
+                margin-bottom: 15px;
+            }
+            
+            .tool-title {
+                font-size: 1.1rem;
+                padding: 12px 15px;
+            }
+            
+            /* Input fields - larger for touch */
+            input[type="text"],
+            input[type="number"],
+            input[type="date"],
+            input[type="email"],
+            textarea,
+            select {
+                font-size: 16px !important; /* Prevents zoom on iOS */
+                padding: 14px !important;
+                min-height: 48px; /* Touch-friendly */
+            }
+            
+            /* Buttons - larger and stack better */
+            .btn {
+                padding: 14px 20px;
+                font-size: 0.95rem;
+                min-height: 48px; /* Touch-friendly */
+                width: 100%;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+            }
+            
+            /* Grid layouts to single column */
             .translator-grid,
             .date-converter-grid,
-            .flat-rate-container {
+            .flat-rate-container,
+            .calc-row,
+            .calc-grid {
                 grid-template-columns: 1fr;
-            }
-            
-            .calc-row {
-                grid-template-columns: 1fr;
+                gap: 15px;
             }
             
             .rooming-header,
-            .rooming-row {
-                grid-template-columns: 1fr;
-            }
-            
+            .rooming-row,
             .extensions-header,
             .extensions-row {
                 grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            /* Hide header labels on mobile for rooming/extensions */
+            .rooming-header,
+            .extensions-header {
+                display: none;
+            }
+            
+            /* Add labels to inputs on mobile */
+            .rooming-row input::placeholder,
+            .extensions-row input::placeholder {
+                font-weight: 600;
+            }
+            
+            /* Remove buttons - bigger touch target */
+            .remove-day-btn {
+                width: 100%;
+                margin-top: 8px;
+                padding: 12px;
+                font-size: 1rem;
+            }
+            
+            /* Swap button in translator */
+            .swap-btn {
+                width: 100%;
+                height: 48px;
+                border-radius: 12px;
+                margin: 10px 0;
+            }
+            
+            /* Task notes grid */
+            .task-notes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            /* Result boxes */
+            .result-box {
+                padding: 15px;
+            }
+            
+            .result-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .result-label {
+                font-size: 0.85rem;
+            }
+            
+            .result-value {
+                font-size: 1.3rem;
+            }
+            
+            /* Copy buttons */
+            .copy-value-btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
             }
             
             /* Business Calculator responsive */
@@ -1492,6 +1595,19 @@ function clearDateError() {
             
             .tool-box > div > div[style*="padding-left"] {
                 padding-left: 0 !important;
+            }
+            
+            /* Tables */
+            .rooming-table,
+            .extensions-table {
+                font-size: 0.85rem;
+            }
+            
+            .rooming-table th,
+            .rooming-table td,
+            .extensions-table th,
+            .extensions-table td {
+                padding: 10px 8px;
             }
         }
         
@@ -1694,6 +1810,68 @@ function clearDateError() {
     .form-body {
         padding: 20px;
     }
+    
+    /* Extra small mobile improvements */
+    h1 {
+        font-size: 1.4rem;
+    }
+    
+    .nav-link {
+        padding: 8px 12px;
+        font-size: 0.75rem;
+    }
+    
+    .tool-title {
+        font-size: 1rem;
+        padding: 10px 12px;
+    }
+    
+    .btn {
+        font-size: 0.9rem;
+        padding: 12px 16px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+    body {
+        padding: 5px;
+    }
+    
+    .container {
+        padding: 0;
+    }
+    
+    .tool-box {
+        padding: 15px 10px;
+    }
+    
+    h1 {
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+    }
+    
+    .tool-title {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    textarea {
+        padding: 12px !important;
+    }
+    
+    .btn {
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+    
+    .nav-link {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
 }
 
 </style>
@@ -1779,6 +1957,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 @media (max-width: 1024px) {
     .nav-links {
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     .nav-link {
         padding: 8px 14px;
@@ -1788,21 +1968,33 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 @media (max-width: 768px) {
     .nav-menu {
-        padding: 15px;
+        padding: 15px 10px;
     }
+    
+    .nav-links {
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
     .nav-link {
-        padding: 8px 12px;
+        padding: 10px 14px;
         font-size: 0.8rem;
+        min-width: auto;
+        flex: 0 1 auto;
     }
 }
 
 @media (max-width: 600px) {
     .nav-links {
         gap: 6px;
+        flex-wrap: wrap;
     }
     .nav-link {
-        padding: 6px 10px;
+        padding: 8px 12px;
         font-size: 0.75rem;
+        flex: 0 1 calc(50% - 6px); /* Two columns */
+        text-align: center;
     }
 }
 </style>
