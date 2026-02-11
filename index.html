@@ -1173,8 +1173,8 @@ function clearDateError() {
         .rooming-header,
         .rooming-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1.5fr 1.5fr 1.5fr auto;
-            gap: 15px;
+            grid-template-columns: 1.8fr 0.8fr 1.1fr 1.1fr 1.1fr 50px;
+            gap: 10px;
             align-items: center;
             margin-bottom: 15px;
         }
@@ -1243,25 +1243,22 @@ function clearDateError() {
         }
         
         /* Extensions Maker */
-        .extensions-header {
+        .extensions-header,
+        .extensions-row {
             display: grid;
-            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1.5fr auto;
-            gap: 15px;
+            grid-template-columns: 1.8fr 1.1fr 1.1fr 1.1fr 1.1fr 50px;
+            gap: 10px;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .extensions-header {
             font-weight: 700;
             color: var(--primary);
             padding: 15px;
             background: #f8fafc;
             border-radius: 10px;
-        }
-        
-        .extensions-row {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr 1.5fr auto;
-            gap: 15px;
-            align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
         
         .extensions-row input {
@@ -1961,7 +1958,11 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <div class="calc-grid">
                     <div class="input-group">
                         <label>Amount (Including VAT)</label>
-                        <input type="number" id="vatAmount" placeholder="Enter amount" oninput="calculateVAT()">
+                        <input type="number" id="vatAmount" placeholder="Enter amount with VAT" oninput="calculateVATFromIncluding()">
+                    </div>
+                    <div class="input-group">
+                        <label>Amount (Excluding VAT)</label>
+                        <input type="number" id="vatAmountExcluding" placeholder="Enter amount without VAT" oninput="calculateVATFromExcluding()">
                     </div>
                 </div>
                 
@@ -1971,6 +1972,13 @@ document.addEventListener("DOMContentLoaded",()=>{
                         <div class="result-value-wrapper">
     <span class="result-value" id="vatWithout">0.00</span>
     <button class="copy-value-btn" onclick="copyValue('vatWithout')">Copy</button>
+</div>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">Amount With VAT:</span>
+                        <div class="result-value-wrapper">
+    <span class="result-value" id="vatWith">0.00</span>
+    <button class="copy-value-btn" onclick="copyValue('vatWith')">Copy</button>
 </div>
                     </div>
                     <div class="result-item">
@@ -2321,6 +2329,7 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <div>ROOM TYPE</div>
                 <div>MEAL TYPE</div>
                 <div>VIEW TYPE</div>
+                <div></div>
             </div>
             
             <div id="roomingList">
@@ -2389,6 +2398,7 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <div>NEW HCN</div>
                 <div>FROM</div>
                 <div>TO</div>
+                <div></div>
             </div>
             
             <div id="extensionsList">
@@ -2836,21 +2846,63 @@ function swapLanguages() {
         }
         
         // VAT Calculator
-        function calculateVAT() {
+        function calculateVATFromIncluding() {
             const amount = parseFloat(document.getElementById('vatAmount').value);
             const result = document.getElementById('vatResult');
+            
+            // Clear the other input
+            document.getElementById('vatAmountExcluding').value = '';
             
             if (!amount || amount <= 0) {
                 result.style.display = 'none';
                 return;
             }
             
-            const withoutVat = (amount * 100) / 115 + 0.01;
+            const withoutVat = (amount * 100) / 115;
             const vatOnly = amount - withoutVat;
             
             document.getElementById('vatWithout').textContent = withoutVat.toFixed(2);
+            document.getElementById('vatWith').textContent = amount.toFixed(2);
             document.getElementById('vatOnly').textContent = vatOnly.toFixed(2);
+            
+            // Show only "Amount Without VAT" and "VAT Amount" (hide "Amount With VAT")
+            document.getElementById('vatWithout').closest('.result-item').style.display = 'flex';
+            document.getElementById('vatWith').closest('.result-item').style.display = 'none';
+            document.getElementById('vatOnly').closest('.result-item').style.display = 'flex';
+            
             result.style.display = 'block';
+        }
+        
+        function calculateVATFromExcluding() {
+            const amount = parseFloat(document.getElementById('vatAmountExcluding').value);
+            const result = document.getElementById('vatResult');
+            
+            // Clear the other input
+            document.getElementById('vatAmount').value = '';
+            
+            if (!amount || amount <= 0) {
+                result.style.display = 'none';
+                return;
+            }
+            
+            const withVat = amount * 1.15;
+            const vatOnly = withVat - amount;
+            
+            document.getElementById('vatWithout').textContent = amount.toFixed(2);
+            document.getElementById('vatWith').textContent = withVat.toFixed(2);
+            document.getElementById('vatOnly').textContent = vatOnly.toFixed(2);
+            
+            // Show only "Amount With VAT" and "VAT Amount" (hide "Amount Without VAT")
+            document.getElementById('vatWithout').closest('.result-item').style.display = 'none';
+            document.getElementById('vatWith').closest('.result-item').style.display = 'flex';
+            document.getElementById('vatOnly').closest('.result-item').style.display = 'flex';
+            
+            result.style.display = 'block';
+        }
+        
+        // Keep old function for backward compatibility
+        function calculateVAT() {
+            calculateVATFromIncluding();
         }
         
         // Meals Calculator
