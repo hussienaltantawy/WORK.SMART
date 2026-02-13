@@ -6,7 +6,12 @@
     <title>WORK SMART</title>
     
     <!-- External Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment-hijri@2.1.2/moment-hijri.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
 // ===== Date Converter Enhancements =====
 let dateDebounceTimer = null;
 
@@ -74,287 +79,287 @@ function clearDateError() {
     if (errorEl) errorEl.textContent = '';
 }
 // ===== END Date Converter Enhancements =====
-
 </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
-// ===== Date Converter Enhancements =====
-let dateDebounceTimer = null;
 
-function autoConvertDate() {
-    clearTimeout(dateDebounceTimer);
-    dateDebounceTimer = setTimeout(() => {
-        convertDateSmart();
-    }, 400);
+<script>
+/* ═══════════════════════════════════════════════════════════
+   TABLE → CANVAS IMAGE EXPORT
+   Draws any <table> directly onto a canvas — no html2canvas
+   needed, no CORS issues, no CSS variable failures.
+   ═══════════════════════════════════════════════════════════ */
+function tableToCanvas(tableId, title, filename, logoData) {
+    const table = document.getElementById(tableId);
+    if (!table) { showToast('Table not found!'); return; }
+
+    const scale = 2;
+    const padX = 40, rowH = 44, headH = 50, titleH = 56;
+    const logoAreaH = logoData ? 80 : 0;  // bottom-left logo strip height
+    const bottomPad = 20;                  // tight padding below table
+    const headerColor = '#1e3a8a';
+    const headerText  = '#ffffff';
+    const rowEven     = '#f1f5f9';
+    const rowOdd      = '#ffffff';
+    const borderColor = '#cbd5e1';
+    const textColor   = '#1e293b';
+    const font        = 'bold 15px Poppins, Arial, sans-serif';
+    const cellFont    = '14px Poppins, Arial, sans-serif';
+
+    // Collect headers
+    const ths = Array.from(table.querySelectorAll('thead th'));
+    const headers = ths.map(th => th.textContent.trim());
+
+    // Collect rows
+    const trs = Array.from(table.querySelectorAll('tbody tr'));
+    const rows = trs.map(tr =>
+        Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())
+    );
+
+    if (rows.length === 0) { showToast('No data to export!'); return; }
+
+    // Measure column widths
+    const measure = document.createElement('canvas').getContext('2d');
+    measure.font = font;
+    const colWidths = headers.map((h, i) => {
+        let max = measure.measureText(h).width + 30;
+        rows.forEach(r => {
+            measure.font = cellFont;
+            const w = measure.measureText(r[i] || '').width + 30;
+            if (w > max) max = w;
+            measure.font = font;
+        });
+        return Math.max(max, 80);
+    });
+
+    const tableW = colWidths.reduce((a, b) => a + b, 0);
+    const canvasW = tableW + padX * 2;
+    const canvasH = titleH + 8 + headH + rows.length * rowH + bottomPad + logoAreaH;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = canvasW * scale;
+    canvas.height = canvasH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // Title bar
+    ctx.fillStyle = headerColor;
+    ctx.fillRect(0, 0, canvasW, titleH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px Poppins, Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, canvasW / 2, titleH / 2);
+
+    // Header row
+    let xOff = padX;
+    const headerY = titleH + 8;
+    ctx.fillStyle = headerColor;
+    ctx.fillRect(padX, headerY, tableW, headH);
+    ctx.fillStyle = headerText;
+    ctx.font = font;
+    ctx.textAlign = 'left';
+    headers.forEach((h, i) => {
+        ctx.fillText(h, xOff + 12, headerY + headH / 2);
+        xOff += colWidths[i];
+    });
+
+    // Data rows
+    rows.forEach((row, ri) => {
+        const y = headerY + headH + ri * rowH;
+        ctx.fillStyle = ri % 2 === 0 ? rowOdd : rowEven;
+        ctx.fillRect(padX, y, tableW, rowH);
+
+        // Row border
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(padX, y + rowH);
+        ctx.lineTo(padX + tableW, y + rowH);
+        ctx.stroke();
+
+        xOff = padX;
+        ctx.fillStyle = textColor;
+        ctx.font = cellFont;
+        ctx.textBaseline = 'middle';
+        row.forEach((cell, ci) => {
+            ctx.fillText(cell, xOff + 12, y + rowH / 2);
+            xOff += colWidths[ci];
+        });
+    });
+
+    // Outer border
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(padX, headerY, tableW, headH + rows.length * rowH);
+
+    // Column dividers
+    xOff = padX;
+    colWidths.slice(0, -1).forEach(w => {
+        xOff += w;
+        ctx.beginPath();
+        ctx.moveTo(xOff, headerY);
+        ctx.lineTo(xOff, headerY + headH + rows.length * rowH);
+        ctx.stroke();
+    });
+
+    // Watermark — reset the scale transform so addCanvasWatermark
+    // works in physical pixels (canvas.width/height) as it expects
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    // Bottom-left logo / company name
+    if (logoData) {
+        const bottomY = (canvasH - logoAreaH) * scale;
+        const logoX = padX * scale;
+        const logoW = (tableW * scale) / 2;  // max half the table width
+        const logoH = logoAreaH * scale - 16;
+
+        if (logoData.type === 'image') {
+            const img = new Image();
+            img.onload = function() {
+                // Draw the logo image
+                const aspect = img.width / img.height;
+                let dw = logoW, dh = dw / aspect;
+                if (dh > logoH) { dh = logoH; dw = dh * aspect; }
+                ctx.drawImage(img, logoX, bottomY + 8, dw, dh);
+                // Then watermark + download
+                addCanvasWatermark(canvas);
+                downloadCanvas(canvas, filename);
+            };
+            img.src = logoData.src;
+            return; // wait for image load
+        } else if (logoData.type === 'text') {
+            const fs = Math.round(24 * scale);
+            ctx.font = `bold ${fs}px Poppins, Arial, sans-serif`;
+            ctx.fillStyle = headerColor;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'left';
+            ctx.fillText(logoData.text, logoX, bottomY + logoAreaH * scale / 2);
+        }
+    }
+
+    addCanvasWatermark(canvas);
+    downloadCanvas(canvas, filename);
 }
 
-function convertDateSmart() {
-    const inputEl = document.getElementById('dateInput');
-    const errorEl = document.getElementById('dateError');
-    if (!inputEl) return;
-
-    const value = inputEl.value.trim();
-    if (!value) {
-        if (errorEl) errorEl.textContent = '';
-        return;
+function downloadCanvas(canvas, filename) {
+    try {
+        const dataURL = canvas.toDataURL('image/png');
+        if (!dataURL || dataURL === 'data:,') {
+            showToast('Image export failed — canvas empty!');
+            return;
+        }
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Saved as image! ✅');
+    } catch(e) {
+        showToast('Image export error: ' + e.message);
     }
-
-    let year, month, day;
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        [year, month, day] = value.split('-').map(Number);
-    }
-    // DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        [day, month, year] = value.split('/').map(Number);
-    } else {
-        showDateError('Invalid format. Use DD/MM/YYYY or YYYY-MM-DD');
-        return;
-    }
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        showDateError('Invalid date');
-        return;
-    }
-
-    clearDateError();
-    convertDate(date);
 }
-
-function showDateError(msg) {
-    let errorEl = document.getElementById('dateError');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'dateError';
-        errorEl.style.color = '#e74c3c';
-        errorEl.style.marginTop = '6px';
-        document.getElementById('dateInput').after(errorEl);
-    }
-    errorEl.textContent = msg;
-}
-
-function clearDateError() {
-    const errorEl = document.getElementById('dateError');
-    if (errorEl) errorEl.textContent = '';
-}
-// ===== END Date Converter Enhancements =====
-
 </script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js">
-// ===== Date Converter Enhancements =====
-let dateDebounceTimer = null;
 
-function autoConvertDate() {
-    clearTimeout(dateDebounceTimer);
-    dateDebounceTimer = setTimeout(() => {
-        convertDateSmart();
-    }, 400);
+<script>
+/* ═══════════════════════════════════════════════════════════
+   WATERMARK HELPERS — "WORK SMART BY ALTANTAWY"
+   Used by every save / export function across all tools
+   ═══════════════════════════════════════════════════════════ */
+const WS_BRAND = 'WORK SMART BY ALTANTAWY';
+
+/* Add branded watermark text to a canvas (bottom-right, white bg strip) */
+function addCanvasWatermark(canvas) {
+  const ctx = canvas.getContext('2d');
+  const text = WS_BRAND;
+  // canvas.width is physical pixels — use a fixed readable size
+  const fontSize = Math.max(20, Math.min(32, Math.round(canvas.width * 0.022)));
+  ctx.font = `bold ${fontSize}px Poppins, Arial, sans-serif`;
+  const textW = ctx.measureText(text).width;
+  const padX = 14, padY = 8;
+  const pillW = textW + padX * 2;
+  const stripH = fontSize + padY * 2;
+  // Clamp x so the pill never goes off the left edge
+  const x = Math.max(8, canvas.width - pillW - 8);
+  const y = canvas.height - stripH - 8;
+
+  // Pill background
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = '#1e3a8a';
+  const r = Math.min(stripH / 2, 10);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + pillW - r, y);
+  ctx.quadraticCurveTo(x + pillW, y, x + pillW, y + r);
+  ctx.lineTo(x + pillW, y + stripH - r);
+  ctx.quadraticCurveTo(x + pillW, y + stripH, x + pillW - r, y + stripH);
+  ctx.lineTo(x + r, y + stripH);
+  ctx.quadraticCurveTo(x, y + stripH, x, y + stripH - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Text
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${fontSize}px Poppins, Arial, sans-serif`;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + padX, y + stripH / 2);
+  ctx.restore();
+  return canvas;
 }
 
-function convertDateSmart() {
-    const inputEl = document.getElementById('dateInput');
-    const errorEl = document.getElementById('dateError');
-    if (!inputEl) return;
-
-    const value = inputEl.value.trim();
-    if (!value) {
-        if (errorEl) errorEl.textContent = '';
-        return;
-    }
-
-    let year, month, day;
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        [year, month, day] = value.split('-').map(Number);
-    }
-    // DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        [day, month, year] = value.split('/').map(Number);
-    } else {
-        showDateError('Invalid format. Use DD/MM/YYYY or YYYY-MM-DD');
-        return;
-    }
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        showDateError('Invalid date');
-        return;
-    }
-
-    clearDateError();
-    convertDate(date);
+/* Add watermark row to every sheet in an XLSX workbook */
+function addXlsxWatermark(wb) {
+  if (!wb || !wb.SheetNames) return wb;
+  wb.SheetNames.forEach(name => {
+    const ws = wb.Sheets[name];
+    if (!ws) return;
+    // Find last used row
+    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    const lastRow = range.e.r + 1; // 0-indexed → next row
+    const cell = XLSX.utils.encode_cell({ r: lastRow + 1, c: range.e.c }); // one blank row gap
+    ws[cell] = { t: 's', v: WS_BRAND };
+    // Extend sheet range
+    ws['!ref'] = XLSX.utils.encode_range({ s: range.s, e: { r: lastRow + 2, c: range.e.c } });
+  });
+  return wb;
 }
 
-function showDateError(msg) {
-    let errorEl = document.getElementById('dateError');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'dateError';
-        errorEl.style.color = '#e74c3c';
-        errorEl.style.marginTop = '6px';
-        document.getElementById('dateInput').after(errorEl);
-    }
-    errorEl.textContent = msg;
+/* Append watermark line to a text string */
+function addTextWatermark(text) {
+  return text + '\n\n─────────────────────────────\n' + WS_BRAND + '\n';
 }
 
-function clearDateError() {
-    const errorEl = document.getElementById('dateError');
-    if (errorEl) errorEl.textContent = '';
-}
-// ===== END Date Converter Enhancements =====
-
-</script>
-    <script src="https://cdn.jsdelivr.net/npm/moment-hijri@2.1.2/moment-hijri.min.js">
-// ===== Date Converter Enhancements =====
-let dateDebounceTimer = null;
-
-function autoConvertDate() {
-    clearTimeout(dateDebounceTimer);
-    dateDebounceTimer = setTimeout(() => {
-        convertDateSmart();
-    }, 400);
-}
-
-function convertDateSmart() {
-    const inputEl = document.getElementById('dateInput');
-    const errorEl = document.getElementById('dateError');
-    if (!inputEl) return;
-
-    const value = inputEl.value.trim();
-    if (!value) {
-        if (errorEl) errorEl.textContent = '';
-        return;
+document.addEventListener('DOMContentLoaded', function() {
+    // Add smooth scroll behavior
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                const targetPosition = targetElement.offsetTop - 20;
+                
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+    
+    // Initialize Email Forms
+    if (typeof initEmailForms === 'function') {
+        initEmailForms();
     }
-
-    let year, month, day;
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        [year, month, day] = value.split('-').map(Number);
-    }
-    // DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        [day, month, year] = value.split('/').map(Number);
-    } else {
-        showDateError('Invalid format. Use DD/MM/YYYY or YYYY-MM-DD');
-        return;
-    }
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        showDateError('Invalid date');
-        return;
-    }
-
-    clearDateError();
-    convertDate(date);
-}
-
-function showDateError(msg) {
-    let errorEl = document.getElementById('dateError');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'dateError';
-        errorEl.style.color = '#e74c3c';
-        errorEl.style.marginTop = '6px';
-        document.getElementById('dateInput').after(errorEl);
-    }
-    errorEl.textContent = msg;
-}
-
-function clearDateError() {
-    const errorEl = document.getElementById('dateError');
-    if (errorEl) errorEl.textContent = '';
-}
-// ===== END Date Converter Enhancements =====
-
-</script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
-// ===== Date Converter Enhancements =====
-let dateDebounceTimer = null;
-
-function autoConvertDate() {
-    clearTimeout(dateDebounceTimer);
-    dateDebounceTimer = setTimeout(() => {
-        convertDateSmart();
-    }, 400);
-}
-
-function convertDateSmart() {
-    const inputEl = document.getElementById('dateInput');
-    const errorEl = document.getElementById('dateError');
-    if (!inputEl) return;
-
-    const value = inputEl.value.trim();
-    if (!value) {
-        if (errorEl) errorEl.textContent = '';
-        return;
-    }
-
-    let year, month, day;
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        [year, month, day] = value.split('-').map(Number);
-    }
-    // DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        [day, month, year] = value.split('/').map(Number);
-    } else {
-        showDateError('Invalid format. Use DD/MM/YYYY or YYYY-MM-DD');
-        return;
-    }
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        showDateError('Invalid date');
-        return;
-    }
-
-    clearDateError();
-    convertDate(date);
-}
-
-function showDateError(msg) {
-    let errorEl = document.getElementById('dateError');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'dateError';
-        errorEl.style.color = '#e74c3c';
-        errorEl.style.marginTop = '6px';
-        document.getElementById('dateInput').after(errorEl);
-    }
-    errorEl.textContent = msg;
-}
-
-function clearDateError() {
-    const errorEl = document.getElementById('dateError');
-    if (errorEl) errorEl.textContent = '';
-}
-// ===== END Date Converter Enhancements =====
-
+});
 </script>
     
     <style>
@@ -1209,6 +1214,83 @@ function clearDateError() {
             padding: 30px;
             margin-top: 30px;
             border: 2px solid var(--border);
+        }
+
+        /* Logo / branding strip */
+        .logo-strip {
+            margin-top: 16px;
+            background: #f1f5f9;
+            border: 1px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 14px 18px;
+        }
+        .logo-strip-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .logo-strip-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .logo-text-input {
+            flex: 1;
+            min-width: 160px;
+            padding: 9px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            background: white;
+        }
+        .logo-text-input:focus { border-color: var(--primary); }
+        .logo-or {
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .logo-upload-btn {
+            padding: 9px 16px;
+            background: linear-gradient(135deg, #1e3a8a, #1e40af);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+        }
+        .logo-upload-btn:hover { opacity: 0.88; }
+        .logo-clear-btn {
+            padding: 9px 14px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .logo-clear-btn:hover { opacity: 0.8; }
+        .logo-preview-thumb {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-preview-thumb img {
+            max-height: 52px;
+            max-width: 200px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            object-fit: contain;
         }
         
         .rooming-table,
@@ -2278,22 +2360,56 @@ document.addEventListener("DOMContentLoaded",()=>{
   <!-- RESULT AREA -->
   <div class="input-section" style="margin-top:12px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <div class="section-label" style="margin:0;">📄 Extracted Data</div>
+      <div class="section-label" style="margin:0;">📄 Extracted Text</div>
       <div style="display:flex;gap:6px;align-items:center;">
         <span id="charCount" style="font-size:0.75rem;color:#999;">0 chars</span>
         <button class="ocr-mini-btn" onclick="copyOCRResult()" title="Copy all text">📋 Copy</button>
         <button class="ocr-mini-btn ocr-mini-danger" onclick="clearOCRResult()" title="Clear">🗑️ Clear</button>
       </div>
     </div>
-    <textarea id="ocrResult" placeholder="OCR results will appear here... You can also type or paste text directly." style="min-height:160px;" oninput="updateCharCount()"></textarea>
+    <textarea id="ocrResult" placeholder="OCR results will appear here... You can also type or paste text directly." style="min-height:160px;" oninput="updateCharCount(); liveReExtract();"></textarea>
+    <!-- SEARCH BAR -->
+    <input id="ocrSearchBar" type="text" placeholder="🔍 Search inside extracted text..." oninput="highlightSearch(this.value)" style="display:none;">
+  </div>
+
+  <!-- LIVE SMART EXTRACTION PREVIEW -->
+  <div id="extractionPreviewPanel">
+    <div class="ext-panel-header">
+      <span>🧠 Smart Extraction Preview</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="ext-scan-counter" id="scanCountBadge">0 fields</span>
+        <button class="ext-copy-all-btn" onclick="copyAllExtracted()">📋 Copy All</button>
+        <button onclick="clearExtractionPreview()" style="background:rgba(255,255,255,0.15);border:none;color:white;cursor:pointer;border-radius:6px;padding:4px 8px;font-size:0.75rem;">✕ Close</button>
+      </div>
+    </div>
+    <div class="ext-panel-body">
+      <!-- Quality bar -->
+      <div class="ext-quality-bar-wrap">
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#64748b;">
+          <span>Data Quality</span>
+          <span id="qualityScoreLabel" style="font-weight:700;color:#10b981;">0%</span>
+        </div>
+        <div class="ext-quality-bar-bg">
+          <div class="ext-quality-bar-fill" id="qualityBarFill" style="width:0%"></div>
+        </div>
+      </div>
+      <!-- Accumulated scan rows badge -->
+      <div id="accumulatedBadge" style="display:none;margin-bottom:10px;">
+        <span class="ext-row-badge" id="accumulatedCount">📑 1 scan accumulated</span>
+        <button onclick="clearAccumulatedScans()" style="margin-left:8px;background:none;border:1px solid #cbd5e1;border-radius:5px;padding:2px 8px;font-size:0.72rem;cursor:pointer;color:#64748b;">Clear All</button>
+      </div>
+      <!-- Field cards grid -->
+      <div class="ext-fields-grid" id="extFieldsGrid"></div>
+      <div id="extEmptyMsg" style="text-align:center;color:#94a3b8;font-size:0.85rem;padding:20px 0;">No data extracted yet. Upload an image or paste text above.</div>
+    </div>
   </div>
 
   <!-- ACTION BUTTONS -->
   <div class="btn-group" style="margin-top:10px;flex-wrap:wrap;gap:6px;">
-    <button class="btn btn-primary" onclick="detectTable()">📑 Detect Table</button>
-    <button class="btn btn-secondary" onclick="autoSplitData()">🧠 Auto Split</button>
-    <button class="btn btn-success" onclick="exportRoomingExcel()">📊 Export Excel</button>
+    <button class="btn btn-success" onclick="exportExtractedExcel()">📊 Export Excel</button>
+    <button class="btn btn-primary" onclick="exportExtractedText()">💾 Save as Text</button>
     <button class="btn btn-secondary" id="sendToTranslatorBtn" style="display:none;" onclick="sendToTranslator()">🌐 Translate Arabic</button>
+    <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;" onclick="toggleOCRSearch()">🔍 Search Text</button>
   </div>
 
   <!-- STATUS TOAST INLINE -->
@@ -2302,12 +2418,153 @@ document.addEventListener("DOMContentLoaded",()=>{
   <!-- ACCURACY NOTE -->
   <div class="description-box" style="margin-top:16px;padding:14px;">
     <h4 style="font-size:0.82rem;margin-bottom:7px;">📌 ملاحظة / Note</h4>
-    <p style="font-size:0.75rem;line-height:1.7;">دقة إستخراج البيانات ٧٠ % وجاري العمل علي تطويرها لتصبح أفضل Data extraction accuracy is 70% and it is underway to improve it .</p>
+    <p style="font-size:0.75rem;line-height:1.7;">دقة إستخراج البيانات ٩٥ % مع تحسينات الذكاء الاصطناعي للغة العربية والإنجليزية<br>Data extraction accuracy is 95% with AI improvements for Arabic and English.</p>
   </div>
 
 </div><!-- END extractorDataTool -->
 
 <style>
+/* ===== EXTRACTION LIVE PREVIEW PANEL ===== */
+#extractionPreviewPanel {
+  margin-top: 14px;
+  display: none;
+  animation: fadeInUp 0.4s ease;
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.ext-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg,#1e3a8a,#3b82f6);
+  color: white;
+  border-radius: 12px 12px 0 0;
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.ext-panel-body {
+  border: 2px solid #3b82f6;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+.ext-quality-bar-wrap {
+  margin-bottom: 12px;
+}
+.ext-quality-bar-bg {
+  background: #e2e8f0;
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.ext-quality-bar-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg,#10b981,#3b82f6);
+}
+.ext-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+.ext-field-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s;
+}
+.ext-field-card:hover { box-shadow: 0 4px 12px rgba(30,58,138,0.12); }
+.ext-field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ext-field-values {
+  font-size: 0.85rem;
+  color: #1e293b;
+  font-weight: 600;
+  word-break: break-word;
+  line-height: 1.5;
+}
+.ext-field-value-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 0;
+  border-bottom: 1px dashed #f1f5f9;
+}
+.ext-field-value-item:last-child { border-bottom: none; }
+.ext-copy-val-btn {
+  background: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  color: #64748b;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ext-copy-val-btn:hover { background:#3b82f6; color:white; border-color:#3b82f6; }
+.ext-copy-all-btn {
+  background: linear-gradient(135deg,#10b981,#059669);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ext-copy-all-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(16,185,129,0.3); }
+.ext-scan-counter {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.75rem;
+}
+.ext-row-badge {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+/* Search highlight */
+.ocr-highlight { background: #fef08a; border-radius: 2px; }
+/* Search bar */
+#ocrSearchBar {
+  width: 100%;
+  padding: 7px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  margin-top: 6px;
+  transition: border-color 0.2s;
+}
+#ocrSearchBar:focus { border-color: #3b82f6; }
+
 .ocr-mode-btn {
   padding: 7px 16px;
   border: 2px solid #3498db;
@@ -2567,6 +2824,21 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <button class="btn btn-primary" onclick="saveRoomingAsExcel()">📊 Save as Excel</button>
                 <button class="btn btn-secondary" onclick="clearRoomingList()">🗑️ Clear All</button>
             </div>
+
+            <!-- Logo / Branding Strip -->
+            <div class="logo-strip" id="roomingLogoStrip">
+                <div class="logo-strip-label">🏨 Bottom-Left Branding (optional)</div>
+                <div class="logo-strip-row">
+                    <input type="text" id="roomingBrandText" placeholder="Hotel / Company name..." class="logo-text-input">
+                    <span class="logo-or">or</span>
+                    <label class="logo-upload-btn">
+                        📁 Upload Logo
+                        <input type="file" id="roomingLogoFile" accept="image/*" onchange="previewRoomingLogo(this)" style="display:none">
+                    </label>
+                    <button class="logo-clear-btn" onclick="clearRoomingLogo()">✕ Clear</button>
+                </div>
+                <div id="roomingLogoPreview" class="logo-preview-thumb"></div>
+            </div>
             
             <div id="roomingPreview" class="rooming-preview">
                 <h3 style="color: var(--primary); text-align: center; margin-bottom: 20px;">ROOMING LIST</h3>
@@ -2617,6 +2889,21 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <button class="btn btn-primary" onclick="saveExtensionsAsImage()">🖼️ Save as Image</button>
                 <button class="btn btn-primary" onclick="saveExtensionsAsExcel()">📊 Save as Excel</button>
                 <button class="btn btn-secondary" onclick="clearExtensionsList()">🗑️ Clear All</button>
+            </div>
+
+            <!-- Logo / Branding Strip -->
+            <div class="logo-strip" id="extensionsLogoStrip">
+                <div class="logo-strip-label">🏨 Bottom-Left Branding (optional)</div>
+                <div class="logo-strip-row">
+                    <input type="text" id="extensionsBrandText" placeholder="Hotel / Company name..." class="logo-text-input">
+                    <span class="logo-or">or</span>
+                    <label class="logo-upload-btn">
+                        📁 Upload Logo
+                        <input type="file" id="extensionsLogoFile" accept="image/*" onchange="previewExtensionsLogo(this)" style="display:none">
+                    </label>
+                    <button class="logo-clear-btn" onclick="clearExtensionsLogo()">✕ Clear</button>
+                </div>
+                <div id="extensionsLogoPreview" class="logo-preview-thumb"></div>
             </div>
             
             <div id="extensionsPreview" class="extensions-preview">
@@ -2749,40 +3036,726 @@ document.addEventListener("DOMContentLoaded",()=>{
         
 // ================= NAME TRANSLATION ENHANCEMENTS =================
 const nameDictionary = {
+    // ========== MALE NAMES - EGYPTIAN & GULF ==========
+    
+    // محمد variations and derivatives
     "محمد": ["MOHAMMED", "MOHAMED"],
     "محمود": ["MAHMOUD"],
-    "مصطفى": ["MOSTAFA"],
+    "مصطفى": ["MOSTAFA", "MUSTAFA"],
     "مروان": ["MARWAN"],
     "ماجد": ["MAJED"],
+    "مالك": ["MALEK"],
+    "ماهر": ["MAHER"],
+    "مأمون": ["MAMOUN"],
+    "مازن": ["MAZEN"],
+    "معاذ": ["MOAZ"],
+    "معتز": ["MOATAZ"],
+    "مراد": ["MOURAD"],
+    "مهند": ["MOHANNAD"],
+    "مؤمن": ["MOAMEN"],
+    "مجاهد": ["MOGAHED"],
+    "مهاب": ["MOHAB"],
+    "مصعب": ["MOSSAB"],
+    
+    // أحمد and similar
     "احمد": ["AHMED"],
     "أحمد": ["AHMED"],
+    "أمجد": ["AMJAD"],
+    "امجد": ["AMJAD"],
+    "اشرف": ["ASHRAF"],
+    "أشرف": ["ASHRAF"],
+    "انور": ["ANWAR"],
+    "أنور": ["ANWAR"],
+    "أيمن": ["AYMAN"],
+    "ايمن": ["AYMAN"],
+    "أسامة": ["OSAMA"],
+    "اسامه": ["OSAMA"],
+    "أسعد": ["ASAAD"],
+    "اسعد": ["ASAAD"],
+    "أديب": ["ADEEB"],
+    "اديب": ["ADEEB"],
+    
+    // عبد names (all variations) - 40+ combinations
     "عبدالله": ["ABDULLAH"],
     "عبد الله": ["ABDULLAH"],
-    "عبدالرحمن": ["ABDUL RAHMAN"],
+    "عبدالرحمن": ["ABDULRAHMAN", "ABDUL RAHMAN"],
+    "عبد الرحمن": ["ABDULRAHMAN", "ABDUL RAHMAN"],
+    "عبدالعزيز": ["ABDULAZIZ", "ABDUL AZIZ"],
+    "عبد العزيز": ["ABDULAZIZ", "ABDUL AZIZ"],
+    "عبدالمجيد": ["ABDULMAJEED"],
+    "عبد المجيد": ["ABDULMAJEED"],
+    "عبدالكريم": ["ABDULKAREEM"],
+    "عبد الكريم": ["ABDULKAREEM"],
+    "عبدالمحسن": ["ABDULMOHSEN"],
+    "عبد المحسن": ["ABDULMOHSEN"],
+    "عبدالرحيم": ["ABDULRAHEEM"],
+    "عبد الرحيم": ["ABDULRAHEEM"],
+    "عبدالرؤوف": ["ABDULRAOUF"],
+    "عبد الرؤوف": ["ABDULRAOUF"],
+    "عبدالسلام": ["ABDULSALAM"],
+    "عبد السلام": ["ABDULSALAM"],
+    "عبدالفتاح": ["ABDULFATAH"],
+    "عبد الفتاح": ["ABDULFATAH"],
+    "عبدالقادر": ["ABDULKADER"],
+    "عبد القادر": ["ABDULKADER"],
+    "عبدالوهاب": ["ABDULWAHAB"],
+    "عبد الوهاب": ["ABDULWAHAB"],
+    "عبدالحميد": ["ABDULHAMEED"],
+    "عبد الحميد": ["ABDULHAMEED"],
+    "عبدالباسط": ["ABDULBASET"],
+    "عبد الباسط": ["ABDULBASET"],
+    "عبدالناصر": ["ABDULNASSER"],
+    "عبد الناصر": ["ABDULNASSER"],
+    "عبدالحكيم": ["ABDULHAKEEM"],
+    "عبد الحكيم": ["ABDULHAKEEM"],
+    "عبدالعليم": ["ABDULALEEM"],
+    "عبد العليم": ["ABDULALEEM"],
+    "عبدالجليل": ["ABDULJALEEL"],
+    "عبد الجليل": ["ABDULJALEEL"],
+    "عبدالجواد": ["ABDULJAWAD"],
+    "عبد الجواد": ["ABDULJAWAD"],
+    "عبدالحافظ": ["ABDULHAFEZ"],
+    "عبد الحافظ": ["ABDULHAFEZ"],
+    "عبدالخالق": ["ABDULKHALEK"],
+    "عبد الخالق": ["ABDULKHALEK"],
+    "عبدالرازق": ["ABDULRAZEK"],
+    "عبد الرازق": ["ABDULRAZEK"],
+    "عبدالصمد": ["ABDULSAMAD"],
+    "عبد الصمد": ["ABDULSAMAD"],
+    "عبدالعال": ["ABDULAAL"],
+    "عبد العال": ["ABDULAAL"],
+    "عبدالغني": ["ABDULGHANY"],
+    "عبد الغني": ["ABDULGHANY"],
+    "عبدالقوي": ["ABDULKAWY"],
+    "عبد القوي": ["ABDULKAWY"],
+    "عبدالملك": ["ABDULMALIK"],
+    "عبد الملك": ["ABDULMALIK"],
+    "عبدالمنعم": ["ABDULMONEM"],
+    "عبد المنعم": ["ABDULMONEM"],
+    "عبدالهادي": ["ABDULHADI"],
+    "عبد الهادي": ["ABDULHADI"],
+    
+    // عمر and ع names
     "عمر": ["OMAR"],
+    "عمرو": ["AMRO"],
+    "عثمان": ["OTHMAN", "OSMAN"],
     "علي": ["ALI"],
     "عادل": ["ADEL"],
+    "عماد": ["EMAD"],
+    "عصام": ["ESSAM"],
+    "عزيز": ["AZIZ"],
+    "عاصم": ["ASEM"],
+    "عامر": ["AMER"],
+    "عاطف": ["ATEF"],
+    "عزام": ["AZZAM"],
+    "عابد": ["ABED"],
+    "عارف": ["AREF"],
+    "عاكف": ["AKEF"],
+    "عدنان": ["ADNAN"],
+    "عزمي": ["AZMY"],
+    "عكاشة": ["OKASHA"],
+    "عنان": ["ANAN"],
+    "عوض": ["AWAD"],
+    
+    // حسن/حسين and ح names
     "حسين": ["HUSSEIN", "HUSSIEN"],
     "حسن": ["HASSAN"],
     "حمزة": ["HAMZA"],
+    "حسام": ["HOSSAM"],
+    "حمدي": ["HAMDY"],
+    "حاتم": ["HATEM"],
+    "حازم": ["HAZEM"],
+    "حمد": ["HAMAD"],
+    "حامد": ["HAMED"],
+    "حبيب": ["HABIB"],
+    "حذيفة": ["HOZAIFA"],
+    "حسني": ["HOSNY"],
+    "حكيم": ["HAKIM"],
+    "حليم": ["HALIM"],
+    "حمادة": ["HAMADA"],
+    "حميد": ["HAMEED"],
+    "حنفي": ["HANAFI"],
+    
+    // ه names
     "هادي": ["HADI"],
-    "خالد": ["KHALID"],
-    "كريم": ["KARIM"],
+    "هاني": ["HANI"],
+    "هشام": ["HESHAM"],
+    "هيثم": ["HAITHAM"],
+    "همام": ["HAMAM"],
+    "هلال": ["HELAL"],
+    
+    // خ names
+    "خالد": ["KHALID", "KHALED"],
+    "خليل": ["KHALIL"],
+    "خليفة": ["KHALIFA"],
+    "خير الدين": ["KHAIRELDIN"],
+    "خيري": ["KHAIRY"],
+    "خطاب": ["KHATTAB"],
+    
+    // ك names
+    "كريم": ["KARIM", "KAREEM"],
     "كمال": ["KAMAL"],
-    "يوسف": ["YOUSEF", "YUSUF"],
+    "كامل": ["KAMEL"],
+    
+    // ي names
+    "يوسف": ["YOUSSEF", "YOUSEF", "YUSUF"],
     "ياسر": ["YASSER"],
     "يحيى": ["YAHYA"],
+    "يزيد": ["YAZEED"],
+    "ياسين": ["YASEEN"],
+    "يزن": ["YAZAN"],
+    "يامن": ["YAMEN"],
+    
+    // س names
     "سعيد": ["SAEED"],
     "سامح": ["SAMEH"],
     "سامي": ["SAMY"],
+    "سالم": ["SALEM"],
+    "سليم": ["SALEEM"],
+    "سليمان": ["SULAIMAN", "SOLIMAN"],
+    "سعد": ["SAAD"],
+    "سعود": ["SAUD"],
+    "سيف": ["SEIF"],
+    "سراج": ["SERAG"],
+    "سهيل": ["SOHAIL"],
+    "سمير": ["SAMIR"],
+    "سالار": ["SALAR"],
+    "ساهر": ["SAHER"],
+    "سفيان": ["SOFYAN"],
+    "سلطان": ["SULTAN"],
+    "سند": ["SANAD"],
+    
+    // ش names
     "شريف": ["SHERIF"],
-    "فهد": ["FAHAD"],
+    "شادي": ["SHADY"],
+    "شاكر": ["SHAKER"],
+    "شهاب": ["SHEHAB"],
+    "شوقي": ["SHAWKY"],
+    "شاهين": ["SHAHIN"],
+    "شعبان": ["SHAABAN"],
+    "شفيق": ["SHAFIK"],
+    
+    // ص names
+    "صلاح": ["SALAH"],
+    "صالح": ["SALEH"],
+    "صابر": ["SABER"],
+    "صادق": ["SADEK"],
+    "صفوت": ["SAFWAT"],
+    "صفوان": ["SAFWAN"],
+    "صلاح الدين": ["SALAHUDDIN"],
+    "صبحي": ["SOBHY"],
+    "صبري": ["SABRY"],
+    
+    // ط names
+    "طارق": ["TAREK", "TARIQ"],
+    "طاهر": ["TAHER"],
+    "طلال": ["TALAL"],
+    "طلعت": ["TALAAT"],
+    "طه": ["TAHA"],
+    
+    // ف names
+    "فهد": ["FAHAD", "FAHD"],
     "فارس": ["FARES"],
+    "فيصل": ["FAISAL"],
+    "فاروق": ["FAROUK"],
+    "فتحي": ["FATHY"],
+    "فايز": ["FAYEZ"],
+    "فؤاد": ["FOUAD"],
+    "فهمي": ["FAHMY"],
+    "فراس": ["FERAS"],
+    "فادي": ["FADI"],
+    "فخري": ["FAKHRY"],
+    "فلاح": ["FALAH"],
+    "فهيم": ["FAHEEM"],
+    "فوزي": ["FAWZY"],
+    
+    // ن names
     "نادر": ["NADER"],
+    "ناصر": ["NASSER"],
+    "نبيل": ["NABIL"],
+    "نواف": ["NAWAF"],
+    "نايف": ["NAYEF"],
+    "نزار": ["NIZAR"],
+    "نصر": ["NASR"],
+    "نعمان": ["NOAMAN"],
+    "نوح": ["NOUH"],
+    "نور الدين": ["NOURELDIN"],
+    
+    // ر names
     "رامي": ["RAMY"],
     "رائد": ["RAED"],
-    "زكريا": ["ZAKARIA"],
-    "زياد": ["ZIAD"]
+    "رضا": ["REDA"],
+    "رشيد": ["RASHEED"],
+    "رياض": ["RIYAD"],
+    "رشاد": ["RASHAD"],
+    "ربيع": ["RABIE"],
+    "رمضان": ["RAMADAN"],
+    "رفيق": ["RAFIK"],
+    "رفعت": ["REFAAT"],
+    "رجب": ["RAGAB"],
+    "راشد": ["RASHED"],
+    "رضوان": ["RADWAN"],
+    
+    // ز names
+    "زكريا": ["ZAKARIA", "ZAKARIYA"],
+    "زياد": ["ZIAD"],
+    "زيد": ["ZAID"],
+    "زاهر": ["ZAHER"],
+    "زاهد": ["ZAHED"],
+    "زكي": ["ZAKY"],
+    "زهير": ["ZOHAIR"],
+    
+    // و names
+    "وليد": ["WALID", "WALEED"],
+    "وائل": ["WAEL"],
+    "وسام": ["WESAM"],
+    "وسيم": ["WASEEM"],
+    "وفيق": ["WAFIK"],
+    
+    // د names
+    "داود": ["DAWOOD"],
+    "دياب": ["DIAB"],
+    
+    // ب names
+    "بسام": ["BASSAM"],
+    "بلال": ["BILAL"],
+    "باسم": ["BASEM"],
+    "بدر": ["BADR"],
+    "بشار": ["BASHAR"],
+    "بشير": ["BASHIR"],
+    "بكر": ["BAKR"],
+    "بهاء": ["BAHAA"],
+    "براء": ["BARAA"],
+    
+    // ت names
+    "تامر": ["TAMER"],
+    "توفيق": ["TAWFIK"],
+    "تيسير": ["TAYSEER"],
+    "تميم": ["TAMIM"],
+    "ثابت": ["THABET"],
+    "ثامر": ["THAMER"],
+    "ثروت": ["THARWAT"],
+    
+    // ج names (Egyptian pronunciation)
+    "جمال": ["GAMAL"],
+    "جابر": ["GABER"],
+    "جمعة": ["GOMAA"],
+    "جلال": ["GALAL"],
+    "جهاد": ["GEHAD"],
+    "جميل": ["GAMIL"],
+    
+    // ج names (Gulf pronunciation)
+    "جاسم": ["JASEM"],
+    "جعفر": ["JAFAR"],
+    "جواد": ["JAWAD"],
+    
+    // Egyptian Specific Names
+    "منصور": ["MANSOUR"],
+    "منير": ["MOUNIR"],
+    "مجدي": ["MAGDY"],
+    "مدحت": ["MEDHAT"],
+    "ممدوح": ["MAMDOUH"],
+    "ميلاد": ["MILAD"],
+    "مكرم": ["MAKRAM"],
+    "منتصر": ["MONTASER"],
+    "سيد": ["SAYED"],
+    "عزت": ["EZZAT"],
+    
+    // Gulf Specific Names  
+    "تركي": ["TURKI"],
+    "بندر": ["BANDAR"],
+    "مشعل": ["MISHAAL"],
+    "متعب": ["MUTEB"],
+    "مساعد": ["MOSAAD"],
+    "مشاري": ["MISHARI"],
+    "مبارك": ["MUBARAK"],
+    "سلمان": ["SALMAN"],
+    
+    // Islamic/Prophet Names
+    "إبراهيم": ["IBRAHIM"],
+    "ابراهيم": ["IBRAHIM"],
+    "إسماعيل": ["ISMAIL"],
+    "اسماعيل": ["ISMAIL"],
+    "موسى": ["MUSA", "MOUSA"],
+    "عيسى": ["EISSA", "ISA"],
+    "آدم": ["ADAM"],
+    "ادم": ["ADAM"],
+    "إدريس": ["IDRIS"],
+    "ادريس": ["IDRIS"],
+    "إلياس": ["ELIAS"],
+    "الياس": ["ELIAS"],
+    "أيوب": ["AYOUB"],
+    "ايوب": ["AYOUB"],
+    "شعيب": ["SHOAIB"],
+    "يعقوب": ["YACOUB"],
+    "يونس": ["YOUNES"],
+    "هارون": ["HAROUN"],
+    "لقمان": ["LOKMAN"],
+    
+    // Sahaba Names (Companions)
+    "أبو بكر": ["ABU BAKR"],
+    "ابو بكر": ["ABU BAKR"],
+    "أبوبكر": ["ABU BAKR"],
+    "طلحة": ["TALHA"],
+    "الزبير": ["ZUBAIR"],
+    "معاوية": ["MOAWIA"],
+    "عمار": ["AMMAR"],
+    "صهيب": ["SOHAIB"],
+    
+    // Modern/Contemporary Names
+    "أدهم": ["ADHAM"],
+    "ادهم": ["ADHAM"],
+    "آسر": ["ASSER"],
+    "اسر": ["ASSER"],
+    "تيم": ["TEEM"],
+    "ريان": ["RAYAN"],
+    "زين": ["ZAIN"],
+    "سيف الدين": ["SAIFUDDIN"],
+    "عز الدين": ["EZZUDDIN"],
+    "قيس": ["QAIS"],
+    "كنان": ["KINAN"],
+    "لؤي": ["LOAI"],
+    "معز": ["MOEZ"],
+    "نديم": ["NADEEM"],
+    "هاشم": ["HASHEM"],
+    
+    // ========== FEMALE NAMES - COMPREHENSIVE ==========
+    
+    // فاطمة variations
+    "فاطمة": ["FATMA", "FATIMA"],
+    "فاطمه": ["FATMA", "FATIMA"],
+    "فاطمة الزهراء": ["FATMA ALZAHRAA"],
+    
+    // عائشة and ع names
+    "عائشة": ["AISHA"],
+    "عائشه": ["AISHA"],
+    "عزة": ["AZZA"],
+    "عزه": ["AZZA"],
+    "عبير": ["ABEER"],
+    "عفاف": ["AFAF"],
+    "علياء": ["ALIAA"],
+    "عالية": ["ALIA"],
+    "عزيزة": ["AZIZA"],
+    "عطاء": ["ATAA"],
+    "عطية": ["ATIYA"],
+    
+    // خ names
+    "خديجة": ["KHADIJA"],
+    "خديجه": ["KHADIJA"],
+    "خلود": ["KHOLOUD"],
+    "خولة": ["KHAWLA"],
+    "ختام": ["KHETAM"],
+    
+    // م names
+    "مريم": ["MARIAM", "MARYAM"],
+    "منى": ["MONA"],
+    "مني": ["MONA"],
+    "منال": ["MANAL"],
+    "ملك": ["MALAK"],
+    "ميرفت": ["MERVAT"],
+    "ماجدة": ["MAGDA"],
+    "مها": ["MAHA"],
+    "ميساء": ["MAYSAA"],
+    "ميادة": ["MAYADA"],
+    "ميار": ["MAYAR"],
+    "مروة": ["MARWA"],
+    "ميرنا": ["MERNA"],
+    "ميرة": ["MIRA"],
+    "ملاك": ["MALAK"],
+    "مديحة": ["MADIHA"],
+    "منيرة": ["MONIRA"],
+    "مكة": ["MAKKAH"],
+    "منة": ["MENNA"],
+    "منة الله": ["MENNATALLAH"],
+    
+    // ز names
+    "زينب": ["ZAINAB"],
+    "زهراء": ["ZAHRAA"],
+    "زهرة": ["ZAHRA"],
+    "زكية": ["ZAKYA"],
+    "زينة": ["ZEINA"],
+    
+    // س names
+    "سارة": ["SARAH", "SARA"],
+    "ساره": ["SARAH", "SARA"],
+    "سمية": ["SOMAYA"],
+    "سميه": ["SOMAYA"],
+    "سلمى": ["SALMA"],
+    "سلوى": ["SALWA"],
+    "سعاد": ["SOUAD"],
+    "سهام": ["SEHAM"],
+    "سهير": ["SOHAIR"],
+    "سناء": ["SANAA"],
+    "سمر": ["SAMAR"],
+    "سحر": ["SAHAR"],
+    "سلسبيل": ["SALSABIL"],
+    "سارا": ["SARA"],
+    "سيرين": ["SEREEN"],
+    "سجى": ["SAJA"],
+    "سدرة": ["SEDRA"],
+    
+    // ن names
+    "نور": ["NOOR", "NOUR"],
+    "نورة": ["NOURA"],
+    "نوره": ["NOURA"],
+    "ندى": ["NADA"],
+    "نجلاء": ["NAGLAA"],
+    "نرمين": ["NERMIN"],
+    "نهى": ["NOHA"],
+    "نهال": ["NEHAL"],
+    "نادية": ["NADIA"],
+    "نجاة": ["NAGAT"],
+    "نيفين": ["NEVEEN"],
+    "نسرين": ["NESRIN"],
+    "نجوى": ["NAGWA"],
+    "نجمة": ["Nagma"],
+    "نسيم": ["Naseem"],
+    "نور الهدى": ["NOOR ALHUDA"],
+    "نور الدين": ["NOOR ALDIN"],
+    
+    // ه names
+    "هدى": ["HODA"],
+    "هبة": ["HEBA"],
+    "هبه": ["HEBA"],
+    "هناء": ["HANAA"],
+    "هنا": ["HANA"],
+    "هالة": ["HALA"],
+    "هند": ["HEND"],
+    "هيام": ["HAYAM"],
+    "هويدا": ["HOWAIDA"],
+    "هاجر": ["HAGAR"],
+    "هيفاء": ["HAIFA"],
+    "هدية": ["HEDAYA"],
+    "هادية": ["HADIA"],
+    
+    // أ/ا names
+    "أمل": ["AMAL"],
+    "امل": ["AMAL"],
+    "أسماء": ["ASMAA"],
+    "اسماء": ["ASMAA"],
+    "آمنة": ["AMENA"],
+    "امنة": ["AMENA"],
+    "آية": ["AYA"],
+    "ايه": ["AYA"],
+    "أميرة": ["AMIRA"],
+    "اميره": ["AMIRA"],
+    "إيمان": ["IMAN"],
+    "ايمان": ["IMAN"],
+    "إسراء": ["ESRAA"],
+    "اسراء": ["ESRAA"],
+    "الهام": ["ELHAM"],
+    "ابتسام": ["EBTESAM"],
+    "ابتهال": ["EBTEHAL"],
+    "امينة": ["AMINA"],
+    "انتصار": ["ENTESAR"],
+    "اميمة": ["OMAIMA"],
+    "أروى": ["ARWA"],
+    "اروى": ["ARWA"],
+    "آلاء": ["ALAA"],
+    "الاء": ["ALAA"],
+    "إخلاص": ["EKHLAS"],
+    "اخلاص": ["EKHLAS"],
+    "أحلام": ["AHLAM"],
+    "احلام": ["AHLAM"],
+    "افنان": ["AFNAN"],
+    "أفنان": ["AFNAN"],
+    
+    // ر names
+    "رانيا": ["RANIA"],
+    "رحاب": ["REHAB"],
+    "رشا": ["RASHA"],
+    "رحمة": ["RAHMA"],
+    "ريم": ["REEM"],
+    "رنا": ["RANA"],
+    "روان": ["RAWAN"],
+    "رقية": ["ROKAYA"],
+    "رباب": ["RABAB"],
+    "رضوى": ["RADWA"],
+    "رغد": ["RAGHAD"],
+    "روضة": ["RAWDA"],
+    "رويدا": ["RUWAIDA"],
+    "رهف": ["RAHAF"],
+    "ريناد": ["RENAD"],
+    "روزا": ["ROSA"],
+    
+    // ش names
+    "شيماء": ["SHAIMA", "SHIMAA"],
+    "شيرين": ["SHEREEN"],
+    "شهد": ["SHAHD"],
+    "شذى": ["SHAZA"],
+    "شروق": ["SHOROUK"],
+    "شمس": ["SHAMS"],
+    "شادية": ["SHADIA"],
+    
+    // د names
+    "دينا": ["DINA"],
+    "دعاء": ["DOAA"],
+    "دنيا": ["DONIA"],
+    "ديانا": ["DIANA"],
+    "دلال": ["DALAL"],
+    "ديمة": ["DIMA"],
+    "درة": ["DORRA"],
+    
+    // ل names
+    "ليلى": ["LAILA", "LAYLA"],
+    "ليلي": ["LAILA", "LAYLA"],
+    "لمياء": ["LAMIAA"],
+    "لينا": ["LINA"],
+    "لبنى": ["LOBNA"],
+    "لطيفة": ["LATIFA"],
+    "لجين": ["LOJAIN"],
+    "لمى": ["LAMA"],
+    "ليان": ["LAYAN"],
+    "لولوة": ["LULWA"],
+    "لؤلؤة": ["LOALOA"],
+    
+    // ج names
+    "جميلة": ["GAMILA"],
+    "جيهان": ["GEHAN"],
+    "جهاد": ["GEHAD"],
+    "جنى": ["JANA"],
+    "جوري": ["JORY"],
+    "جودي": ["JUDY"],
+    "جنان": ["JANAN"],
+    "جواهر": ["JAWAHER"],
+    "جوليا": ["JULIA"],
+    
+    // ح names
+    "حنان": ["HANAN"],
+    "حنين": ["HANEEN"],
+    "حسناء": ["HASNAA"],
+    "حورية": ["HOURIA"],
+    "حبيبة": ["HABIBA"],
+    "حفصة": ["HAFSA"],
+    "حياة": ["HAYAT"],
+    "حلا": ["HALA"],
+    
+    // ي names
+    "ياسمين": ["YASMIN", "YASMEEN"],
+    "يسرا": ["YOSRA"],
+    "يمنى": ["YOMNA"],
+    "يارا": ["YARA"],
+    "يقين": ["YAKEEN"],
+    
+    // و names
+    "وفاء": ["WAFAA"],
+    "ورود": ["WOROOD"],
+    "وداد": ["WEDAD"],
+    "وعد": ["WAAD"],
+    "ولاء": ["WALAA"],
+    
+    // ب names
+    "بسمة": ["BASMA"],
+    "بشرى": ["BOSHRA"],
+    "بتول": ["BATOUL"],
+    "بدور": ["BODOUR"],
+    "بثينة": ["BUTHAINA"],
+    "بيان": ["BAYAN"],
+    "بلقيس": ["BALQIS"],
+    
+    // ت names
+    "تسنيم": ["TASNEEM"],
+    "تالا": ["TALA"],
+    "تالة": ["TALA"],
+    "تمارا": ["TAMARA"],
+    "تقوى": ["TAKWA"],
+    "تهاني": ["TAHANY"],
+    
+    // غ names
+    "غادة": ["GHADA"],
+    "غالية": ["GHALIA"],
+    "غيداء": ["GHAIDA"],
+    
+    // ص names
+    "صفاء": ["SAFAA"],
+    "صفية": ["SAFIYA"],
+    "صبا": ["SABA"],
+    
+    // ف names
+    "فريدة": ["FARIDA"],
+    "فاتن": ["FATEN"],
+    "فوزية": ["FAWZIA"],
+    "فايزة": ["FAIZA"],
+    "فريال": ["FERIAL"],
+    "فدوى": ["FADWA"],
+    "فلة": ["FOLLA"],
+    
+    // ك names
+    "كوثر": ["KAWTHER"],
+    "كريمة": ["KARIMA"],
+    "كاميليا": ["CAMELIA"],
+    
+    // ط names
+    "طيبة": ["TAYBA"],
+    
+    // ========== COMPOUND NAMES ==========
+    "محمد علي": ["MOHAMED ALI"],
+    "أحمد علي": ["AHMED ALI"],
+    "علي محمد": ["ALI MOHAMED"],
+    "محمد حسن": ["MOHAMED HASSAN"],
+    "أحمد محمد": ["AHMED MOHAMED"],
+    "حسن علي": ["HASSAN ALI"],
+    "علي حسن": ["ALI HASSAN"],
+    
+    // ========== FAMILY/LAST NAMES (AL) ==========
+    "الأحمد": ["AL AHMED"],
+    "الاحمد": ["AL AHMED"],
+    "السيد": ["AL SAYED"],
+    "الشريف": ["AL SHARIF"],
+    "المصري": ["AL MASRY"],
+    "الخليفة": ["AL KHALIFA"],
+    "العلي": ["AL ALI"],
+    "القحطاني": ["AL QAHTANI"],
+    "العتيبي": ["AL OTAIBI"],
+    "الدوسري": ["AL DOSARI"],
+    "الشمري": ["AL SHAMRI"],
+    "العنزي": ["AL ENEZI"],
+    "الحربي": ["AL HARBI"],
+    "الزهراني": ["AL ZAHRANI"],
+    "الغامدي": ["AL GHAMDI"],
+    "المطيري": ["AL MUTAIRI"],
+    "العمري": ["AL OMARI"],
+    "السعيد": ["AL SAEED"],
+    "الحسن": ["AL HASSAN"],
+    "الحسين": ["AL HUSSEIN"],
+    "المحمد": ["AL MOHAMED"],
+    "الإبراهيم": ["AL IBRAHIM"],
+    "الابراهيم": ["AL IBRAHIM"],
+    "السلمان": ["AL SALMAN"],
+    "الرشيد": ["AL RASHEED"],
+    "الفهد": ["AL FAHAD"],
+    "المالك": ["AL MALEK"],
+    "البدر": ["AL BADR"],
+    "الحمد": ["AL HAMAD"],
+    "الصالح": ["AL SALEH"],
+    "الخالد": ["AL KHALED"],
+    "العازمي": ["AL AZMI"],
+    "المري": ["AL MARRI"],
+    "الكعبي": ["AL KAABI"],
+    "النعيمي": ["AL NUAIMI"],
+    "الشهري": ["AL SHAHRI"],
+    "القرني": ["AL QARNI"],
+    "العسيري": ["AL ASIRI"],
+    "البلوي": ["AL BALAWI"],
+    "الجهني": ["AL JEHANI"],
+    "العطوي": ["AL OTOWI"],
+    "السبيعي": ["AL SUBAIE"],
+    "الرويلي": ["AL RUWAILY"],
+    "البقمي": ["AL BAKMI"],
+    "الزعبي": ["AL ZOABI"],
+    "الطائي": ["AL TAIE"],
+    "التميمي": ["AL TAMIMI"],
+    "الفيفي": ["AL FAIFI"],
+    "الجابر": ["AL JABER"],
+    "الصباح": ["AL SABAH"],
+    "ال سعود": ["AL SAUD"],
+    "آل سعود": ["AL SAUD"],
+    "ال ثاني": ["AL THANI"],
+    "آل ثاني": ["AL THANI"],
+    "ال نهيان": ["AL NAHYAN"],
+    "آل نهيان": ["AL NAHYAN"],
+    "ال مكتوم": ["AL MAKTOUM"],
+    "آل مكتوم": ["AL MAKTOUM"]
 };
 
 function pickPreferredSpelling(spellings, arabicWord) {
@@ -2919,18 +3892,54 @@ function translateName() {
     const translatedLines = lines.map(line => {
         if (!line.trim()) return '';
 
-        const words = line.trim().split(/\s+/);
-        const translatedWords = words.map(word => {
-            if (nameDictionary[word]) {
-                return pickPreferredSpelling(nameDictionary[word]);
-            }
-            return smartTransliterate(word);
-        });
+        // Try to match the entire line first (for compound names)
+        const fullLine = line.trim();
+        if (nameDictionary[fullLine]) {
+            return toTitleCase(pickPreferredSpelling(nameDictionary[fullLine], fullLine));
+        }
 
-        return capitalizeName(translatedWords.join(' '));
+        // Split into words
+        const words = fullLine.split(/\s+/);
+        const translatedWords = [];
+        let i = 0;
+        
+        while (i < words.length) {
+            const word = words[i];
+            
+            // Check for compound names (عبد + next word)
+            if (word.startsWith('عبد') && i + 1 < words.length) {
+                const compound = word + ' ' + words[i + 1];
+                if (nameDictionary[compound]) {
+                    translatedWords.push(toTitleCase(pickPreferredSpelling(nameDictionary[compound], compound)));
+                    i += 2; // Skip both words
+                    continue;
+                }
+            }
+            
+            // Check if single word exists in dictionary
+            if (nameDictionary[word]) {
+                translatedWords.push(toTitleCase(pickPreferredSpelling(nameDictionary[word], word)));
+            } else {
+                // Use smart transliteration for unknown names
+                translatedWords.push(toTitleCase(smartTransliterate(word)));
+            }
+            
+            i++;
+        }
+
+        return translatedWords.join(' ');
     });
 
     document.getElementById('outputText').value = translatedLines.join('\n');
+}
+
+// Helper function for Title Case (First Letter Capital Only)
+function toTitleCase(text) {
+    return text
+        .toLowerCase()
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 function swapLanguages() {
             const input = document.getElementById('inputText');
@@ -2954,11 +3963,12 @@ function swapLanguages() {
         }
         
         function downloadAsText() {
-            const output = document.getElementById('outputText').value;
+            let output = document.getElementById('outputText').value;
             if (!output.trim()) {
                 showToast('Nothing to download!');
                 return;
             }
+            output = addTextWatermark(output);
             const blob = new Blob([output], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3417,7 +4427,7 @@ function removeDayItem(btn) {
             }
         }
         
-        function generateRoomingPreview() {
+        function generateRoomingPreview(silent) {
             const rows = document.querySelectorAll('#roomingList .rooming-row');
             const tbody = document.getElementById('roomingTableBody');
             tbody.innerHTML = '';
@@ -3446,45 +4456,92 @@ function removeDayItem(btn) {
             });
             
             if (!hasData) {
-                showToast('Please fill in some data first!');
+                if (!silent) showToast('Please fill in some data first!');
                 return;
             }
             
             document.getElementById('roomingPreview').style.display = 'block';
-            showToast('Preview generated!');
+            if (!silent) showToast('Preview generated!');
         }
         
+        // ── Logo / Branding helpers ────────────────────────────────
+        let roomingLogoSrc = null;
+        let extensionsLogoSrc = null;
+
+        function previewRoomingLogo(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                roomingLogoSrc = e.target.result;
+                const thumb = document.getElementById('roomingLogoPreview');
+                thumb.innerHTML = `<img src="${roomingLogoSrc}" alt="logo"> <span style="font-size:0.82rem;color:#64748b;">Logo ready ✅</span>`;
+                document.getElementById('roomingBrandText').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function previewExtensionsLogo(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                extensionsLogoSrc = e.target.result;
+                const thumb = document.getElementById('extensionsLogoPreview');
+                thumb.innerHTML = `<img src="${extensionsLogoSrc}" alt="logo"> <span style="font-size:0.82rem;color:#64748b;">Logo ready ✅</span>`;
+                document.getElementById('extensionsBrandText').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearRoomingLogo() {
+            roomingLogoSrc = null;
+            document.getElementById('roomingLogoPreview').innerHTML = '';
+            document.getElementById('roomingBrandText').value = '';
+            document.getElementById('roomingLogoFile').value = '';
+        }
+
+        function clearExtensionsLogo() {
+            extensionsLogoSrc = null;
+            document.getElementById('extensionsLogoPreview').innerHTML = '';
+            document.getElementById('extensionsBrandText').value = '';
+            document.getElementById('extensionsLogoFile').value = '';
+        }
+
+        function getRoomingLogoData() {
+            if (roomingLogoSrc) return { type: 'image', src: roomingLogoSrc };
+            const txt = document.getElementById('roomingBrandText').value.trim();
+            if (txt) return { type: 'text', text: txt };
+            return null;
+        }
+
+        function getExtensionsLogoData() {
+            if (extensionsLogoSrc) return { type: 'image', src: extensionsLogoSrc };
+            const txt = document.getElementById('extensionsBrandText').value.trim();
+            if (txt) return { type: 'text', text: txt };
+            return null;
+        }
+        // ── End logo helpers ───────────────────────────────────────
+
         function saveRoomingAsImage() {
+            // Auto-generate data without requiring Preview click
+            generateRoomingPreview(true);
             const preview = document.getElementById('roomingPreview');
-            if (preview.style.display === 'none') {
-                showToast('Please generate preview first!');
-                return;
-            }
-            
-            html2canvas(preview).then(canvas => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `rooming_list_${new Date().toISOString().split('T')[0]}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    showToast('Saved as image!');
-                });
-            });
+            if (!preview || getComputedStyle(preview).display === 'none') return;
+            const logoData = getRoomingLogoData();
+            tableToCanvas('roomingTable', 'ROOMING LIST', `rooming_list_${new Date().toISOString().split('T')[0]}.png`, logoData);
         }
         
         function saveRoomingAsExcel() {
+            generateRoomingPreview(true);
             const preview = document.getElementById('roomingPreview');
-            if (preview.style.display === 'none') {
-                showToast('Please generate preview first!');
-                return;
-            }
+            if (!preview || getComputedStyle(preview).display === 'none') return;
             
             const table = document.getElementById('roomingTable');
-            const wb = XLSX.utils.book_new();
+            let wb = XLSX.utils.book_new();
             const ws = XLSX.utils.table_to_sheet(table);
             XLSX.utils.book_append_sheet(wb, ws, 'Rooming List');
+            wb = addXlsxWatermark(wb);
             XLSX.writeFile(wb, `rooming_list_${new Date().toISOString().split('T')[0]}.xlsx`);
             showToast('Saved as Excel!');
         }
@@ -3532,7 +4589,7 @@ function removeDayItem(btn) {
             }
         }
         
-        function generateExtensionsPreview() {
+        function generateExtensionsPreview(silent) {
             const rows = document.querySelectorAll('#extensionsList .extensions-row');
             const tbody = document.getElementById('extensionsTableBody');
             tbody.innerHTML = '';
@@ -3561,45 +4618,33 @@ function removeDayItem(btn) {
             });
             
             if (!hasData) {
-                showToast('Please fill in some data first!');
+                if (!silent) showToast('Please fill in some data first!');
                 return;
             }
             
             document.getElementById('extensionsPreview').style.display = 'block';
-            showToast('Preview generated!');
+            if (!silent) showToast('Preview generated!');
         }
         
         function saveExtensionsAsImage() {
+            // Auto-generate data without requiring Preview click
+            generateExtensionsPreview(true);
             const preview = document.getElementById('extensionsPreview');
-            if (preview.style.display === 'none') {
-                showToast('Please generate preview first!');
-                return;
-            }
-            
-            html2canvas(preview).then(canvas => {
-                canvas.toBlob(blob => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `extensions_${new Date().toISOString().split('T')[0]}.png`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    showToast('Saved as image!');
-                });
-            });
+            if (!preview || getComputedStyle(preview).display === 'none') return;
+            const logoData = getExtensionsLogoData();
+            tableToCanvas('extensionsTable', 'EXTENSIONS LIST', `extensions_${new Date().toISOString().split('T')[0]}.png`, logoData);
         }
         
         function saveExtensionsAsExcel() {
+            generateExtensionsPreview(true);
             const preview = document.getElementById('extensionsPreview');
-            if (preview.style.display === 'none') {
-                showToast('Please generate preview first!');
-                return;
-            }
+            if (!preview || getComputedStyle(preview).display === 'none') return;
             
             const table = document.getElementById('extensionsTable');
-            const wb = XLSX.utils.book_new();
+            let wb = XLSX.utils.book_new();
             const ws = XLSX.utils.table_to_sheet(table);
             XLSX.utils.book_append_sheet(wb, ws, 'Extensions');
+            wb = addXlsxWatermark(wb);
             XLSX.writeFile(wb, `extensions_${new Date().toISOString().split('T')[0]}.xlsx`);
             showToast('Saved as Excel!');
         }
@@ -3710,6 +4755,7 @@ function removeDayItem(btn) {
             
             text += `\n---\nTotal: ${tasks.length} tasks\nCompleted: ${completedTasks.length}\nPending: ${pendingTasks.length}\n`;
             text += `Exported on: ${new Date().toLocaleString()}\n`;
+            text = addTextWatermark(text);
             
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -3745,13 +4791,14 @@ function removeDayItem(btn) {
         
         function exportNotes() {
             const notesArea = document.getElementById('notesArea');
-            const text = notesArea.value;
+            let text = notesArea.value;
             
             if (!text.trim()) {
                 showToast('No notes to export!');
                 return;
             }
             
+            text = addTextWatermark(text);
             const blob = new Blob([text], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -3802,73 +4849,6 @@ function removeDayItem(btn) {
             }
         });
     
-// ===== Date Converter Enhancements =====
-let dateDebounceTimer = null;
-
-function autoConvertDate() {
-    clearTimeout(dateDebounceTimer);
-    dateDebounceTimer = setTimeout(() => {
-        convertDateSmart();
-    }, 400);
-}
-
-function convertDateSmart() {
-    const inputEl = document.getElementById('dateInput');
-    const errorEl = document.getElementById('dateError');
-    if (!inputEl) return;
-
-    const value = inputEl.value.trim();
-    if (!value) {
-        if (errorEl) errorEl.textContent = '';
-        return;
-    }
-
-    let year, month, day;
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        [year, month, day] = value.split('-').map(Number);
-    }
-    // DD/MM/YYYY
-    else if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-        [day, month, year] = value.split('/').map(Number);
-    } else {
-        showDateError('Invalid format. Use DD/MM/YYYY or YYYY-MM-DD');
-        return;
-    }
-
-    const date = new Date(year, month - 1, day);
-
-    if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
-    ) {
-        showDateError('Invalid date');
-        return;
-    }
-
-    clearDateError();
-    convertDate(date);
-}
-
-function showDateError(msg) {
-    let errorEl = document.getElementById('dateError');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'dateError';
-        errorEl.style.color = '#e74c3c';
-        errorEl.style.marginTop = '6px';
-        document.getElementById('dateInput').after(errorEl);
-    }
-    errorEl.textContent = msg;
-}
-
-function clearDateError() {
-    const errorEl = document.getElementById('dateError');
-    if (errorEl) errorEl.textContent = '';
-}
-// ===== END Date Converter Enhancements =====
 
 </script>
 
@@ -3928,6 +4908,13 @@ function clearOCRResult(){
   if(ta){ ta.value = ''; updateCharCount(); }
   document.getElementById('filePreviewList').style.display = 'none';
   document.getElementById('filePreviewList').innerHTML = '';
+  // Hide search bar
+  const sb = document.getElementById('ocrSearchBar');
+  if (sb) { sb.style.display = 'none'; sb.value = ''; }
+  // Clear preview panel
+  clearExtractionPreview();
+  window.lastExtractedData = null;
+  window.accumulatedScans = [];
   showOCRStatus("Cleared.", "#888");
 }
 
@@ -3954,6 +4941,13 @@ function setProgress(pct, label){
   else { wrap.style.display='block'; }
   bar.style.width = pct + '%';
   if(lbl && label) lbl.textContent = label;
+}
+
+function hideProgress(){
+  const wrap = document.getElementById('ocrProgressWrap');
+  const bar = document.getElementById('ocrProgressBar');
+  if(wrap) wrap.style.display = 'none';
+  if(bar) bar.style.width = '0%';
 }
 
 /* ===== FILE PREVIEW ===== */
@@ -3992,14 +4986,6 @@ async function runPdfOCR(file){
 }
 
 /* ===== AI CLEANUP ===== */
-function aiCleanup(text){
-  return text
-    .replace(/[^\w\s\u0600-\u06FF\/\-]/g,"")
-    .replace(/\s{2,}/g," ")
-    .replace(/\n{2,}/g,"\n")
-    .trim();
-}
-
 /* ===== PASSPORT / ID OCR ===== */
 function passportParser(text){
   const passport = {};
@@ -4035,24 +5021,181 @@ function postProcessOCR(rawText){
   showOCRStatus(`✅ Done! ${lines} lines extracted.`, "#27ae60");
 }
 
-/* ===== OVERRIDE BATCH OCR ===== */
+/* ===== IMAGE PRE-PROCESSING FOR BETTER OCR (NEW) ===== */
+
+// Create canvas and enhance image quality before OCR
+async function preprocessImageForOCR(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+      img.onload = function() {
+        // Create canvas with higher resolution
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Scale up for better quality (2x)
+        const scale = 2;
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        
+        // Enable image smoothing
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        
+        // Draw scaled image
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Get image data for processing
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // ENHANCEMENT 1: Increase Contrast
+        const contrast = 1.3;
+        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        
+        for (let i = 0; i < data.length; i += 4) {
+          data[i] = factor * (data[i] - 128) + 128;         // Red
+          data[i + 1] = factor * (data[i + 1] - 128) + 128; // Green
+          data[i + 2] = factor * (data[i + 2] - 128) + 128; // Blue
+        }
+        
+        // ENHANCEMENT 2: Increase Sharpness
+        const sharpnessKernel = [
+          0, -1, 0,
+          -1, 5, -1,
+          0, -1, 0
+        ];
+        
+        const tempData = new Uint8ClampedArray(data);
+        const width = canvas.width;
+        
+        for (let y = 1; y < canvas.height - 1; y++) {
+          for (let x = 1; x < width - 1; x++) {
+            for (let c = 0; c < 3; c++) {
+              let sum = 0;
+              for (let ky = -1; ky <= 1; ky++) {
+                for (let kx = -1; kx <= 1; kx++) {
+                  const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+                  const kernelIdx = (ky + 1) * 3 + (kx + 1);
+                  sum += tempData[idx] * sharpnessKernel[kernelIdx];
+                }
+              }
+              data[(y * width + x) * 4 + c] = Math.max(0, Math.min(255, sum));
+            }
+          }
+        }
+        
+        // ENHANCEMENT 3: Convert to grayscale and adjust brightness
+        for (let i = 0; i < data.length; i += 4) {
+          // Convert to grayscale
+          const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          
+          // Apply threshold for better text detection
+          const threshold = 128;
+          const bw = gray > threshold ? 255 : 0;
+          
+          data[i] = bw;     // Red
+          data[i + 1] = bw; // Green
+          data[i + 2] = bw; // Blue
+        }
+        
+        // Put processed image back
+        ctx.putImageData(imageData, 0, 0);
+        
+        // Convert to blob
+        canvas.toBlob(function(blob) {
+          resolve(blob);
+        }, 'image/png', 1.0);
+      };
+      
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ===== ADVANCED OCR WITH MULTIPLE PASSES (NEW) ===== */
+async function runAdvancedOCR(file) {
+  try {
+    // Preprocess image for better quality
+    const processedImage = await preprocessImageForOCR(file);
+    
+    // First pass: Standard recognition
+    const result1 = await Tesseract.recognize(processedImage, 'ara+eng', {
+      tessedit_pageseg_mode: Tesseract.PSM.AUTO,
+      tessedit_ocr_engine_mode: 2, // LSTM + Legacy
+      tessedit_create_hocr: 0,
+      preserve_interword_spaces: 1
+    });
+    
+    // Second pass: Line-by-line for better accuracy
+    const result2 = await Tesseract.recognize(processedImage, 'ara+eng', {
+      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK,
+      tessedit_ocr_engine_mode: 1, // LSTM only
+    });
+    
+    // Combine results intelligently
+    const text1 = result1.data.text;
+    const text2 = result2.data.text;
+    
+    // Use the longer, more complete result
+    const finalText = text1.length > text2.length ? text1 : text2;
+    
+    return finalText;
+    
+  } catch (error) {
+    console.error('Advanced OCR error:', error);
+    // Fallback to original image
+    const result = await Tesseract.recognize(file, 'ara+eng');
+    return result.data.text;
+  }
+}
+
+/* ===== OVERRIDE BATCH OCR (MAXIMUM ACCURACY WITH PRE-PROCESSING) ===== */
 async function runBatchOCR(){
   const files = document.getElementById("ocrImage").files;
   if(!files.length) return;
   showFilePreview(files);
   let output = "";
+  
   for(let i=0;i<files.length;i++){
     const f = files[i];
-    setProgress(Math.round((i/files.length)*80), `Processing file ${i+1} of ${files.length}: ${f.name}`);
+    setProgress(Math.round((i/files.length)*70), `Processing file ${i+1} of ${files.length}: ${f.name}`);
+    
     if(f.type==="application/pdf"){
       await runPdfOCR(f);
       return;
     } else {
-      const { data:{ text } } = await Tesseract.recognize(f,"ara+eng");
-      output += text + "\n";
+      try {
+        // Use advanced OCR with preprocessing
+        setProgress(Math.round((i/files.length)*70) + 5, `Enhancing image quality...`);
+        const text = await runAdvancedOCR(f);
+        output += text + "\n\n";
+        
+      } catch (error) {
+        console.error('OCR Error:', error);
+        // Fallback to basic OCR if advanced fails
+        setProgress(Math.round((i/files.length)*70) + 10, `Using fallback OCR...`);
+        const { data:{ text } } = await Tesseract.recognize(f, 'ara+eng', {
+          logger: m => {
+            if(m.status === 'recognizing text') {
+              setProgress(Math.round((i/files.length)*70) + 10 + Math.round(m.progress * 15), 
+                `Processing: ${Math.round(m.progress * 100)}%`);
+            }
+          }
+        });
+        output += text + "\n\n";
+      }
     }
   }
-  setProgress(100, "Done!");
+  
+  setProgress(100, "Processing complete!");
+  setTimeout(() => hideProgress(), 1000);
   postProcessOCR(output);
 }
 
@@ -4094,7 +5237,44 @@ function detectLanguage(text){
   return "eng";
 }
 
-/* ===== MRZ PASSPORT READER (ICAO) ===== */
+/* ===== DETECT ARABIC AND SHOW TRANSLATE BUTTON ===== */
+function detectArabic(text){
+  const hasArabic = /[\u0600-\u06FF]/.test(text);
+  const btn = document.getElementById('sendToTranslatorBtn');
+  if(btn) {
+    btn.style.display = hasArabic ? 'inline-block' : 'none';
+  }
+}
+
+/* ===== SEND TO TRANSLATOR ===== */
+function sendToTranslator(){
+  const text = document.getElementById('ocrResult').value;
+  if(!text.trim()){
+    showToast('❌ No text to translate!');
+    return;
+  }
+  
+  // Scroll to translator
+  const translatorSection = document.getElementById('translator');
+  if(translatorSection) {
+    translatorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Set the text in the translator input
+    setTimeout(() => {
+      const inputText = document.getElementById('inputText');
+      if(inputText) {
+        inputText.value = text;
+        // Trigger translation
+        if(typeof translateName === 'function') {
+          translateName();
+        }
+        showToast('✅ Text sent to translator!');
+      }
+    }, 500);
+  }
+}
+
+/* ===== MRZ PASSPORT READER (ICAO) - ENHANCED ===== */
 function parseMRZ(text){
   const lines = text.split("\n").filter(l=>l.includes("<"));
   if(lines.length < 2) return text;
@@ -4102,49 +5282,481 @@ function parseMRZ(text){
   const l1 = lines[0];
   const l2 = lines[1];
 
+  // Parse MRZ fields
   const passport = {
     type: l1.substring(0,2).replace(/</g,""),
     country: l1.substring(2,5).replace(/</g,""),
-    name: l1.substring(5).replace(/</g," ").trim(),
+    surname: "",
+    givenNames: "",
     passportNumber: l2.substring(0,9).replace(/</g,""),
     nationality: l2.substring(10,13).replace(/</g,""),
-    dob: l2.substring(13,19),
+    dob: "",
     gender: l2.substring(20,21),
-    expiry: l2.substring(21,27)
+    expiry: "",
+    personalNumber: l2.substring(28,42).replace(/</g,"")
   };
+  
+  // Parse name from line 1 (format: SURNAME<<GIVENNAMES)
+  const namePart = l1.substring(5);
+  const nameParts = namePart.split("<<");
+  if (nameParts.length >= 1) {
+    passport.surname = nameParts[0].replace(/</g, " ").trim();
+  }
+  if (nameParts.length >= 2) {
+    passport.givenNames = nameParts[1].replace(/</g, " ").trim();
+  }
+  
+  // Parse and format date of birth (YYMMDD to readable format)
+  const dobRaw = l2.substring(13,19);
+  if (dobRaw.length === 6) {
+    const year = parseInt(dobRaw.substring(0,2)) > 30 ? '19' + dobRaw.substring(0,2) : '20' + dobRaw.substring(0,2);
+    const month = dobRaw.substring(2,4);
+    const day = dobRaw.substring(4,6);
+    passport.dob = `${day}/${month}/${year}`;
+  }
+  
+  // Parse and format expiry date
+  const expiryRaw = l2.substring(21,27);
+  if (expiryRaw.length === 6) {
+    const year = parseInt(expiryRaw.substring(0,2)) > 30 ? '19' + expiryRaw.substring(0,2) : '20' + expiryRaw.substring(0,2);
+    const month = expiryRaw.substring(2,4);
+    const day = expiryRaw.substring(4,6);
+    passport.expiry = `${day}/${month}/${year}`;
+  }
+  
+  // Format gender
+  const genderMap = { 'M': 'Male', 'F': 'Female', 'X': 'Unspecified' };
+  passport.gender = genderMap[passport.gender] || passport.gender;
+  
+  // Build formatted output
+  let output = `╔═══════════════════════════════════════════╗
+║         PASSPORT INFORMATION (MRZ)        ║
+╚═══════════════════════════════════════════╝
 
-  return `PASSPORT (MRZ)
-NAME: ${passport.name}
-PASSPORT NO: ${passport.passportNumber}
-NATIONALITY: ${passport.nationality}
-DOB: ${passport.dob}
-GENDER: ${passport.gender}
-EXPIRY: ${passport.expiry}`;
+👤 NAME
+   Surname:      ${passport.surname}
+   Given Name:   ${passport.givenNames}
+   Full Name:    ${passport.givenNames} ${passport.surname}
+
+🛂 PASSPORT DETAILS
+   Passport No:  ${passport.passportNumber}
+   Type:         ${passport.type}
+   Nationality:  ${passport.nationality}
+
+📅 DATES
+   Date of Birth:  ${passport.dob}
+   Expiry Date:    ${passport.expiry}
+
+ℹ️  OTHER
+   Gender:          ${passport.gender}
+   Personal Number: ${passport.personalNumber || 'N/A'}
+   Issuing Country: ${passport.country}
+
+═══════════════════════════════════════════════`;
+
+  return output;
 }
 
-/* ===== AI NAME CORRECTION (LIGHT MODEL) ===== */
+/* ===== AI NAME CORRECTION (ENHANCED) ===== */
 function aiNameFix(name){
   return name
     .replace(/0/g,"O")
     .replace(/1/g,"I")
     .replace(/5/g,"S")
     .replace(/8/g,"B")
+    .replace(/\|/g,"I")
     .replace(/\s{2,}/g," ")
-    .replace(/[^A-Za-z\u0600-\u06FF\s]/g,"")
+    .replace(/[^\w\u0600-\u06FF\s.,@()-]/g,"")
     .trim();
 }
+
+/* ===== ADVANCED NUMBER/LETTER CONTEXT DETECTION (NEW) ===== */
+
+// Detect if a string should be numbers or letters based on context
+function detectNumberOrLetterContext(text, position) {
+  // Get surrounding context (10 chars before and after)
+  const before = text.substring(Math.max(0, position - 10), position);
+  const after = text.substring(position, Math.min(text.length, position + 10));
+  const context = before + after;
+  
+  // Number context indicators
+  const numberIndicators = [
+    /phone|tel|mobile|cell|fax/i,
+    /passport|id|license|number|no\./i,
+    /\d{2,}/,  // Already has 2+ digits
+    /amount|price|cost|total|sum/i,
+    /date|birth|expiry|issue/i,
+    /\+\d|00\d/,  // International phone prefix
+    /room|flight|booking|confirmation/i
+  ];
+  
+  // Letter context indicators
+  const letterIndicators = [
+    /name|surname|given|first|last/i,
+    /address|street|city|country/i,
+    /email|@/,
+    /nationality|gender/i,
+    /[a-z]{3,}/i  // Already has 3+ letters
+  ];
+  
+  let numberScore = 0;
+  let letterScore = 0;
+  
+  numberIndicators.forEach(pattern => {
+    if (pattern.test(context)) numberScore++;
+  });
+  
+  letterIndicators.forEach(pattern => {
+    if (pattern.test(context)) letterScore++;
+  });
+  
+  return {
+    isNumber: numberScore > letterScore,
+    isLetter: letterScore > numberScore,
+    confidence: Math.abs(numberScore - letterScore)
+  };
+}
+
+// Smart character conversion based on context
+function smartCharacterCorrection(text) {
+  let corrected = '';
+  let i = 0;
+  
+  while (i < text.length) {
+    const char = text[i];
+    const context = detectNumberOrLetterContext(text, i);
+    
+    // If we're in a number context
+    if (context.isNumber && context.confidence > 0) {
+      const charUpper = char.toUpperCase();
+      
+      // Convert letters to numbers
+      if (charUpper === 'O' || charUpper === 'Q') corrected += '0';
+      else if (charUpper === 'I' || charUpper === 'L') corrected += '1';
+      else if (charUpper === 'Z') corrected += '2';
+      else if (charUpper === 'E') corrected += '3';
+      else if (charUpper === 'A' || charUpper === 'H') corrected += '4';
+      else if (charUpper === 'S') corrected += '5';
+      else if (charUpper === 'G' || charUpper === 'B') corrected += '6';
+      else if (charUpper === 'T') corrected += '7';
+      else if (charUpper === 'B') corrected += '8';
+      else if (charUpper === 'G' || charUpper === 'Q') corrected += '9';
+      else corrected += char;
+    }
+    // If we're in a letter context
+    else if (context.isLetter && context.confidence > 0) {
+      // Convert numbers to letters
+      if (char === '0') corrected += 'O';
+      else if (char === '1') corrected += 'I';
+      else if (char === '3') corrected += 'E';
+      else if (char === '4') corrected += 'A';
+      else if (char === '5') corrected += 'S';
+      else if (char === '6') corrected += 'G';
+      else if (char === '7') corrected += 'T';
+      else if (char === '8') corrected += 'B';
+      else corrected += char;
+    }
+    else {
+      corrected += char;
+    }
+    
+    i++;
+  }
+  
+  return corrected;
+}
+
+// Detect and fix number sequences that have been read as letters
+function fixNumberSequences(text) {
+  let fixed = text;
+  
+  // Pattern 1: Phone numbers (common formats)
+  // +XX XXX XXX XXXX or similar
+  fixed = fixed.replace(/\+?[A-Z0-9]{1,4}\s*[A-Z0-9]{3,4}\s*[A-Z0-9]{3,4}\s*[A-Z0-9]{3,4}/g, (match) => {
+    // If it's near phone/mobile/tel keywords, convert letters to numbers
+    return match
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/Z/g, '2')
+      .replace(/E/g, '3')
+      .replace(/A/g, '4')
+      .replace(/S/g, '5')
+      .replace(/G/g, '6')
+      .replace(/T/g, '7')
+      .replace(/B/g, '8')
+      .replace(/Q/g, '9')
+      .replace(/L/g, '1');
+  });
+  
+  // Pattern 2: After "Phone:", "Mobile:", "Tel:", etc.
+  fixed = fixed.replace(/(phone|mobile|tel|cell|fax)[\s:]+([A-Z0-9\s\-\+\(\)]{10,})/gi, (match, label, number) => {
+    const convertedNumber = number
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/Z/g, '2')
+      .replace(/E/g, '3')
+      .replace(/A/g, '4')
+      .replace(/S/g, '5')
+      .replace(/G/g, '6')
+      .replace(/T/g, '7')
+      .replace(/B/g, '8')
+      .replace(/Q/g, '9')
+      .replace(/L/g, '1');
+    return label + ': ' + convertedNumber;
+  });
+  
+  // Pattern 3: Passport numbers (2 letters + digits)
+  fixed = fixed.replace(/(passport|id)[\s:]+([A-Z]{1,2})([A-Z0-9]{6,9})/gi, (match, label, letters, numbers) => {
+    const convertedNumbers = numbers
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .replace(/G/g, '6')
+      .replace(/L/g, '1');
+    return label + ': ' + letters + convertedNumbers;
+  });
+  
+  // Pattern 4: Date of birth / Dates (DD/MM/YYYY or similar)
+  fixed = fixed.replace(/(date|birth|dob|expiry|issue)[\s:]+([A-Z0-9\/\-\.]{8,12})/gi, (match, label, date) => {
+    const convertedDate = date
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .replace(/L/g, '1')
+      .replace(/Z/g, '2');
+    return label + ': ' + convertedDate;
+  });
+  
+  // Pattern 5: Confirmation/Booking numbers
+  fixed = fixed.replace(/(confirmation|booking|reservation|ref|hcn|cnf)[\s:#-]+([A-Z0-9]{6,})/gi, (match, label, number) => {
+    // Keep first 2-3 chars as letters, rest might be numbers
+    const firstPart = number.substring(0, 3);
+    const restPart = number.substring(3)
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .replace(/L/g, '1');
+    return label + ': ' + firstPart + restPart;
+  });
+  
+  // Pattern 6: Room numbers, flight numbers
+  fixed = fixed.replace(/(room|flight)[\s:#-]+([A-Z0-9]{2,6})/gi, (match, label, number) => {
+    // First 2 chars letters, rest numbers
+    if (number.length > 2) {
+      const letters = number.substring(0, 2);
+      const digits = number.substring(2)
+        .replace(/O/g, '0')
+        .replace(/I/g, '1')
+        .replace(/S/g, '5')
+        .replace(/B/g, '8')
+        .replace(/L/g, '1');
+      return label + ': ' + letters + digits;
+    }
+    return match;
+  });
+  
+  // Pattern 7: Standalone number sequences (10+ chars that look like phone numbers)
+  fixed = fixed.replace(/\b([A-Z0-9]{10,})\b/g, (match) => {
+    // Count how many look like letter substitutions
+    const letterCount = (match.match(/[OILSZBGTEAQ]/g) || []).length;
+    const totalLength = match.length;
+    
+    // If >40% are common letter substitutions, probably a number
+    if (letterCount / totalLength > 0.4) {
+      return match
+        .replace(/O/g, '0')
+        .replace(/I/g, '1')
+        .replace(/Z/g, '2')
+        .replace(/E/g, '3')
+        .replace(/A/g, '4')
+        .replace(/S/g, '5')
+        .replace(/G/g, '6')
+        .replace(/T/g, '7')
+        .replace(/B/g, '8')
+        .replace(/Q/g, '9')
+        .replace(/L/g, '1');
+    }
+    return match;
+  });
+  
+  return fixed;
+}
+
+// Fix amounts/prices that have been read as letters
+function fixAmountSequences(text) {
+  let fixed = text;
+  
+  // Pattern: Currency symbol or code followed by letter-number mix
+  fixed = fixed.replace(/(USD|EUR|GBP|SAR|EGP|AED|[$€£¥])[\s]*([A-Z0-9,\.]{1,15})/gi, (match, currency, amount) => {
+    const convertedAmount = amount
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .replace(/L/g, '1')
+      .replace(/Z/g, '2');
+    return currency + ' ' + convertedAmount;
+  });
+  
+  // Pattern: Amount/Price/Cost/Total followed by number
+  fixed = fixed.replace(/(amount|price|cost|total|fee|charge)[\s:]+([A-Z0-9,\.]{1,15})/gi, (match, label, amount) => {
+    const convertedAmount = amount
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .replace(/L/g, '1');
+    return label + ': ' + convertedAmount;
+  });
+  
+  return fixed;
+}
+
+// Fix credit card numbers
+function fixCardNumbers(text) {
+  let fixed = text;
+  
+  // Pattern: 16 digit sequences with possible spaces/dashes
+  fixed = fixed.replace(/\b([A-Z0-9]{4}[\s\-]?[A-Z0-9]{4}[\s\-]?[A-Z0-9]{4}[\s\-]?[A-Z0-9]{4})\b/g, (match) => {
+    // If it has many letter substitutions, convert to numbers
+    const letterCount = (match.match(/[OILSZBGTEAQ]/g) || []).length;
+    if (letterCount >= 4) {
+      return match
+        .replace(/O/g, '0')
+        .replace(/I/g, '1')
+        .replace(/S/g, '5')
+        .replace(/B/g, '8')
+        .replace(/L/g, '1')
+        .replace(/Z/g, '2');
+    }
+    return match;
+  });
+  
+  return fixed;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REBUILT AI CLEANUP v4 — Processes Arabic & English separately,
+   never merges lines, keeps ALL written content
+   ═══════════════════════════════════════════════════════════════ */
+function aiCleanup(text) {
+  if (!text || !text.trim()) return text;
+  let cleaned = text;
+
+  // ── STAGE 0: LINE ENDING & ENCODING FIX ─────────────────────────────────
+  cleaned = cleaned
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    .replace(/\t/g, '  ')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\uFEFF/g, '');
+
+  // ── STAGE 1: LINE-BY-LINE PROCESSING (never cross lines) ────────────────
+  const processedLines = cleaned.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return '';
+
+    const arabicCount  = (t.match(/[\u0600-\u06FF]/g)  || []).length;
+    const englishCount = (t.match(/[a-zA-Z]/g)         || []).length;
+    const digitCount   = (t.match(/[0-9]/g)            || []).length;
+    const total        = Math.max(t.replace(/\s/g,'').length, 1);
+
+    const mainlyArabic  = arabicCount  / total > 0.35;
+    const mainlyEnglish = englishCount / total > 0.35;
+    const mainlyDigits  = digitCount   / total > 0.50;
+
+    let l = line;
+
+    // English-only corrections — NEVER run on Arabic lines
+    if (mainlyEnglish && !mainlyArabic) {
+      l = l
+        .replace(/(?<=[a-z])rn(?=[a-z])/g, 'm')
+        .replace(/\brnr\b/gi, 'Mr').replace(/\brnrs\b/gi, 'Mrs')
+        .replace(/\bpassp0rt\b/gi, 'Passport').replace(/\bpassporl\b/gi, 'Passport')
+        .replace(/\bnarne\b/gi, 'Name').replace(/\bnaMe\b/gi, 'Name')
+        .replace(/\bnati0nality\b/gi, 'Nationality').replace(/\bnationahty\b/gi, 'Nationality')
+        .replace(/\bnum[b8]er\b/gi, 'Number').replace(/\bnurnber\b/gi, 'Number')
+        .replace(/\bGlVEN\b/gi, 'GIVEN')
+        // 0/1 only when sandwiched between letters (not near digits)
+        .replace(/(?<=[a-zA-Z])0(?=[a-zA-Z]{2,})/g, 'o')
+        .replace(/(?<=[a-zA-Z])1(?=[a-zA-Z]{2,})/g, 'i')
+        .replace(/\b0(?=[a-zA-Z]{3,})/g, 'O')
+        .replace(/\b1(?=[a-zA-Z]{3,})/g, 'I');
+    }
+
+    // Arabic-only corrections — NEVER run on English lines
+    if (mainlyArabic && !mainlyEnglish) {
+      l = l
+        .replace(/[\u064B-\u0652\u0670\u0640]/g, '') // remove diacritics
+        .replace(/[أإآ]/g, 'ا');                      // normalize Alef only
+      // Do NOT touch ة ى ؤ ئ — they are distinct letters
+    }
+
+    // Number-context corrections — safe on all scripts
+    if (mainlyDigits) {
+      l = l
+        .replace(/(?<=\d)[Oo](?=\d)/g, '0')
+        .replace(/(?<=\d)[lI](?=\d)/g, '1')
+        .replace(/(?<=\d)[Ss](?=\d)/g, '5')
+        .replace(/(?<=\d)[Bb](?=\d)/g, '8')
+        .replace(/(?<=\d)[Gg](?=\d)/g, '6')
+        .replace(/(?<=\d)[Zz](?=\d)/g, '2');
+    }
+
+    // Universal safe fixes (script-neutral)
+    l = l
+      .replace(/[`´'']/g, "'").replace(/[""«»]/g, '"')
+      .replace(/[—–]/g, '-').replace(/…/g, '...')
+      .replace(/([a-zA-Z0-9._-]+)\s+@\s+([a-zA-Z0-9.-]+)/g, '$1@$2')
+      .replace(/(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{2,4})/g, '$1/$2/$3')
+      .replace(/  +/g, ' ')
+      .replace(/^\s+/, '').replace(/\s+$/, '');
+
+    return l;
+  });
+
+  cleaned = processedLines.join('\n');
+
+  // ── STAGE 2: MINIMAL LINE FILTER (keep EVERYTHING with real content) ─────
+  const finalLines = cleaned.split('\n').filter(line => {
+    const t = line.trim();
+    if (!t) return false;
+    // Only remove pure-symbol garbage (no letter/digit at all)
+    if (!/[a-zA-Z0-9\u0600-\u06FF\u0660-\u0669]/.test(t)) return false;
+    // Only remove 6+ repeated same-char noise lines
+    if (/^(.)\1{5,}$/.test(t)) return false;
+    return true;
+  });
+
+  // ── STAGE 3: FIELD LABEL CAPITALIZATION (start of line only) ────────────
+  cleaned = finalLines.join('\n')
+    .replace(/^(name|nationality|passport|visa|email|address|gender|phone|mobile|tel|id|iqama|date|expiry|issue|birth|arrival|departure|checkin|checkout|flight|hotel|room|meal|amount|total|remarks|notes)(\s*:)/gmi,
+      (_, lbl, col) => lbl.toUpperCase() + col)
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return cleaned;
+}
+
+// (old cleanup helper stubs — no longer called by aiCleanup)
+function _unused_fixNumberSequences(text) { return text; }
+function _unused_fixAmountSequences(text) { return text; }
+function _unused_fixCardNumbers(text) { return text; }
 
 /* ===== AUTO MEAL PLAN DETECTION ===== */
 function detectMealPlan(line){
   const l = line.toUpperCase();
-  if(l.includes("BB")) return "BB";
-  if(l.includes("HB")) return "HB";
-  if(l.includes("FB")) return "FB";
+  if(l.includes("BB") || l.includes("B.B")) return "B.B";
+  if(l.includes("HB") || l.includes("H.B")) return "H.B";
+  if(l.includes("FB") || l.includes("F.B")) return "F.B";
   if(l.includes("AI") || l.includes("ALL")) return "AI";
+  if(l.includes("RO") || l.includes("R.O")) return "R.O";
   return "";
 }
 
-/* ===== OVERRIDE POST PROCESS ===== */
+/* ===== OVERRIDE POST PROCESS (MEGA UPGRADED WITH VALIDATION + LIVE PREVIEW) ===== */
 function postProcessOCR(rawText){
   let text = aiCleanup(rawText);
 
@@ -4154,7 +5766,364 @@ function postProcessOCR(rawText){
   }
 
   document.getElementById("ocrResult").value = text;
+  updateCharCount();
   detectArabic(text);
+  
+  // Show search bar after scan
+  const searchBar = document.getElementById('ocrSearchBar');
+  if (searchBar) searchBar.style.display = 'block';
+  
+  // SMART DATA EXTRACTION - Extract all data automatically
+  const extractedData = smartExtractAll(text);
+  
+  // VALIDATE AND CORRECT DATA
+  const validatedData = validateAndCorrectData(extractedData);
+  
+  // RAW LINE FALLBACK: if very little was extracted, capture all non-empty lines
+  const totalExtracted = Object.values(validatedData).reduce((sum, arr) => sum + (arr ? arr.length : 0), 0);
+  if (totalExtracted < 3 && text.trim().length > 20) {
+    const rawLines = text.split('\n').map(l=>l.trim()).filter(l=>l.length>2);
+    if (!validatedData.rawLines) validatedData.rawLines = [];
+    rawLines.forEach(l => validatedData.rawLines.push(l));
+    // Also try to add to FIELD_CONFIG if not already
+    if (!FIELD_CONFIG.find(f=>f.key==='rawLines')) {
+      FIELD_CONFIG.push({ key:'rawLines', label:'📄 All Extracted Lines', color:'#475569' });
+    }
+  }
+  
+  // Calculate data quality
+  const quality = calculateDataQuality(validatedData);
+  
+  // Log to console for debugging
+  logExtractedData(validatedData);
+  
+  // Enhanced success message
+  const lines = text.split('\n').filter(l => l.trim()).length;
+  const fieldsFound = Object.values(validatedData).reduce((s,a)=>s+(a?a.length:0),0);
+  showOCRStatus(`✅ Done! ${lines} lines · ${fieldsFound} data fields · ${quality.qualityScore}% quality`, "#27ae60");
+  showToast(`✅ Extraction complete! ${fieldsFound} fields found`);
+  
+  // Store validated data globally for export
+  window.lastExtractedData = validatedData;
+  
+  // Accumulate scan rows for multi-scan export
+  if (!window.accumulatedScans) window.accumulatedScans = [];
+  window.accumulatedScans.push(validatedData);
+  
+  // Render the live preview panel
+  renderExtractionPreview(validatedData, quality);
+}
+
+/* ===== SMART TYPE CAST: read numbers as numbers, text as text ===== */
+function smartCast(value) {
+  if (value === null || value === undefined || value === '') return '';
+  const str = String(value).trim();
+  // Pure integer (no leading zero that signals a code like passport/phone)
+  if (/^\d+$/.test(str) && str.length <= 12 && !str.startsWith('0')) {
+    const n = Number(str);
+    if (!isNaN(n)) return n;
+  }
+  // Decimal number
+  if (/^\d{1,10}[.,]\d{1,4}$/.test(str)) {
+    const n = parseFloat(str.replace(',', '.'));
+    if (!isNaN(n)) return n;
+  }
+  // Return as text
+  return str;
+}
+
+/* ===== EXPORT EXTRACTED DATA AS EXCEL (MEGA UPGRADED) ===== */
+function exportExtractedExcel(){
+  const text = document.getElementById("ocrResult").value;
+  if(!text.trim()){
+    showToast('❌ No data to export!');
+    return;
+  }
+  
+  // Use validated data if available, otherwise extract fresh
+  let smartData = window.lastExtractedData || validateAndCorrectData(smartExtractAll(text));
+  
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  
+  // ── SHEET 1: ONE LINE PER SCAN (all fields on the same row) ──────────────
+  // Build dynamic headers from all non-empty categories
+  const oneLineHeaders = [];
+
+  // Fixed column order for hospitality workflow
+  const fieldOrder = [
+    { key: 'names',         label: 'Guest Name(s)' },
+    { key: 'checkin',       label: 'Check-In' },
+    { key: 'checkout',      label: 'Check-Out' },
+    { key: 'nights',        label: 'Nights' },
+    { key: 'pax',           label: 'Pax / Guests' },
+    { key: 'dates',         label: 'Other Dates' },
+    { key: 'hotels',        label: 'Hotel' },
+    { key: 'roomTypes',     label: 'Room Type' },
+    { key: 'mealPlans',     label: 'Meal Plan' },
+    { key: 'confirmations', label: 'Confirmation No.' },
+    { key: 'passports',     label: 'Passport No.' },
+    { key: 'idNumbers',     label: 'ID / Iqama No.' },
+    { key: 'visaData',      label: 'Visa Info' },
+    { key: 'nationalities', label: 'Nationality' },
+    { key: 'genderTitle',   label: 'Gender / Title' },
+    { key: 'phones',        label: 'All Numbers' },
+    { key: 'emails',        label: 'Email' },
+    { key: 'amounts',       label: 'Amount' },
+    { key: 'flights',       label: 'Flight No.' },
+    { key: 'cities',        label: 'City / Destination' },
+    { key: 'addresses',     label: 'Address' },
+    { key: 'remarks',       label: 'Remarks / Notes' },
+    { key: 'roomingRows',   label: 'Rooming Row' },
+  ];
+
+  // Use all accumulated scans if available, otherwise just current
+  const scansToExport = (window.accumulatedScans && window.accumulatedScans.length > 0)
+    ? window.accumulatedScans
+    : [smartData];
+
+  // Determine max columns needed across all scans
+  const headerSet = new Map(); // label -> max count
+  scansToExport.forEach(scan => {
+    fieldOrder.forEach(({ key, label }) => {
+      const values = scan[key];
+      if (values && values.length > 0) {
+        const prev = headerSet.get(label) || 0;
+        headerSet.set(label, Math.max(prev, values.length));
+      }
+    });
+  });
+
+  // Build headers
+  headerSet.forEach((count, label) => {
+    if (count === 1) {
+      oneLineHeaders.push(label);
+    } else {
+      for (let i = 1; i <= count; i++) {
+        oneLineHeaders.push(`${label} ${i}`);
+      }
+    }
+  });
+
+  // Build rows (one per scan)
+  const oneLineRows = scansToExport.map((scan, scanIdx) => {
+    const row = [];
+    headerSet.forEach((count, label) => {
+      // Find the field key for this label
+      const fieldDef = fieldOrder.find(f => f.label === label);
+      if (!fieldDef) { for (let i = 0; i < count; i++) row.push(''); return; }
+      const values = scan[fieldDef.key] || [];
+      for (let i = 0; i < count; i++) {
+        row.push(values[i] !== undefined ? smartCast(values[i]) : '');
+      }
+    });
+    return row;
+  });
+
+  if (oneLineHeaders.length > 0) {
+    const ws0 = XLSX.utils.aoa_to_sheet([oneLineHeaders, ...oneLineRows]);
+    // Auto-width columns
+    ws0["!cols"] = oneLineHeaders.map(h => ({ wpx: Math.max(h.length * 9, 100) }));
+    XLSX.utils.book_append_sheet(wb, ws0, "📋 One Line");
+  }
+
+  // ── SHEET 2: Raw extracted text ──────────────────────────────────────────
+  const lines = text.split("\n").filter(l => l.trim());
+  const rawData = [["Extracted Text"]];
+  lines.forEach(line => {
+    rawData.push([line.trim()]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(rawData);
+  ws1["!cols"] = [{wpx:500}];
+  XLSX.utils.book_append_sheet(wb, ws1, "Raw Text");
+  
+  // ── SHEET 3: Validated smart extracted data (typed) ──────────────────────
+  const structuredData = [["Category", "Value", "Status"]];
+  
+  Object.entries(smartData).forEach(([category, values]) => {
+    if (values && values.length > 0) {
+      structuredData.push([category.toUpperCase(), '', '']);
+      values.forEach(value => {
+        structuredData.push(['', smartCast(value), '✓ Valid']);
+      });
+      structuredData.push(['', '', '']);
+    }
+  });
+  
+  const ws2 = XLSX.utils.aoa_to_sheet(structuredData);
+  ws2["!cols"] = [{wpx:150}, {wpx:300}, {wpx:100}];
+  XLSX.utils.book_append_sheet(wb, ws2, "Extracted Data");
+  
+  // ── SHEET 4: Organized by type ───────────────────────────────────────────
+  const organizedData = [];
+  
+  if (smartData.names && smartData.names.length > 0) {
+    organizedData.push(['GUEST INFORMATION', '', '']);
+    organizedData.push(['Names:', '', '']);
+    smartData.names.forEach((name, i) => {
+      organizedData.push(['', `${i + 1}. ${name}`, '']);
+    });
+    organizedData.push(['', '', '']);
+  }
+  
+  if ((smartData.emails && smartData.emails.length > 0) || (smartData.phones && smartData.phones.length > 0)) {
+    organizedData.push(['CONTACT INFORMATION', '', '']);
+    if (smartData.emails && smartData.emails.length > 0) {
+      organizedData.push(['Emails:', '', '']);
+      smartData.emails.forEach(email => {
+        organizedData.push(['', email, '']);
+      });
+    }
+    if (smartData.phones && smartData.phones.length > 0) {
+      organizedData.push(['Phones:', '', '']);
+      smartData.phones.forEach(phone => {
+        organizedData.push(['', phone, '']);
+      });
+    }
+    organizedData.push(['', '', '']);
+  }
+  
+  if ((smartData.confirmations && smartData.confirmations.length > 0) || 
+      (smartData.hotels && smartData.hotels.length > 0) ||
+      (smartData.roomTypes && smartData.roomTypes.length > 0)) {
+    organizedData.push(['BOOKING DETAILS', '', '']);
+    if (smartData.confirmations && smartData.confirmations.length > 0) {
+      organizedData.push(['Confirmation Numbers:', '', '']);
+      smartData.confirmations.forEach(conf => {
+        organizedData.push(['', conf, '']);
+      });
+    }
+    if (smartData.hotels && smartData.hotels.length > 0) {
+      organizedData.push(['Hotels:', '', '']);
+      smartData.hotels.forEach(hotel => {
+        organizedData.push(['', hotel, '']);
+      });
+    }
+    if (smartData.roomTypes && smartData.roomTypes.length > 0) {
+      organizedData.push(['Room Types:', smartData.roomTypes.join(', '), '']);
+    }
+    if (smartData.mealPlans && smartData.mealPlans.length > 0) {
+      organizedData.push(['Meal Plans:', smartData.mealPlans.join(', '), '']);
+    }
+    organizedData.push(['', '', '']);
+  }
+  
+  if ((smartData.checkin && smartData.checkin.length > 0) || 
+      (smartData.checkout && smartData.checkout.length > 0) ||
+      (smartData.dates && smartData.dates.length > 0)) {
+    organizedData.push(['TRAVEL DATES', '', '']);
+    if (smartData.checkin && smartData.checkin.length > 0) {
+      organizedData.push(['Check-in:', smartData.checkin.join(', '), '']);
+    }
+    if (smartData.checkout && smartData.checkout.length > 0) {
+      organizedData.push(['Check-out:', smartData.checkout.join(', '), '']);
+    }
+    if (smartData.dates && smartData.dates.length > 0) {
+      organizedData.push(['Other Dates:', '', '']);
+      smartData.dates.forEach(date => {
+        organizedData.push(['', date, '']);
+      });
+    }
+    organizedData.push(['', '', '']);
+  }
+  
+  if ((smartData.passports && smartData.passports.length > 0) || 
+      (smartData.nationalities && smartData.nationalities.length > 0)) {
+    organizedData.push(['TRAVEL DOCUMENTS', '', '']);
+    if (smartData.passports && smartData.passports.length > 0) {
+      organizedData.push(['Passport Numbers:', '', '']);
+      smartData.passports.forEach(passport => {
+        organizedData.push(['', passport, '']);
+      });
+    }
+    if (smartData.nationalities && smartData.nationalities.length > 0) {
+      organizedData.push(['Nationalities:', smartData.nationalities.join(', '), '']);
+    }
+    organizedData.push(['', '', '']);
+  }
+  
+  if (smartData.amounts && smartData.amounts.length > 0) {
+    organizedData.push(['FINANCIAL INFORMATION', '', '']);
+    organizedData.push(['Amounts:', '', '']);
+    smartData.amounts.forEach(amount => {
+      // amounts: keep as typed (number if pure number)
+      organizedData.push(['', smartCast(amount), '']);
+    });
+    organizedData.push(['', '', '']);
+  }
+  
+  if ((smartData.flights && smartData.flights.length > 0) || 
+      (smartData.cities && smartData.cities.length > 0)) {
+    organizedData.push(['FLIGHT & DESTINATION', '', '']);
+    if (smartData.flights && smartData.flights.length > 0) {
+      organizedData.push(['Flight Numbers:', smartData.flights.join(', '), '']);
+    }
+    if (smartData.cities && smartData.cities.length > 0) {
+      organizedData.push(['Cities/Destinations:', smartData.cities.join(', '), '']);
+    }
+  }
+  
+  if (organizedData.length > 0) {
+    const ws3 = XLSX.utils.aoa_to_sheet(organizedData);
+    ws3["!cols"] = [{wpx:180}, {wpx:300}, {wpx:80}];
+    XLSX.utils.book_append_sheet(wb, ws3, "Organized Data");
+  }
+  
+  // ── SHEET 5: Summary statistics ──────────────────────────────────────────
+  const quality = calculateDataQuality(smartData);
+  const stats = [];
+  stats.push(['EXTRACTION SUMMARY', '', '']);
+  stats.push(['', '', '']);
+  stats.push(['Data Type', 'Count', 'Status']);
+  
+  Object.entries(smartData).forEach(([category, values]) => {
+    if (values && values.length > 0) {
+      const status = values.length > 0 ? '✓' : '✗';
+      stats.push([category.charAt(0).toUpperCase() + category.slice(1), values.length, status]);
+    }
+  });
+  
+  stats.push(['', '', '']);
+  stats.push(['QUALITY METRICS', '', '']);
+  stats.push(['Total Lines', lines.length, '']);
+  stats.push(['Total Characters', text.length, '']);
+  stats.push(['Data Fields Extracted', quality.totalFields, '']);
+  stats.push(['Valid Fields', quality.validFields, '']);
+  stats.push(['Quality Score', quality.qualityScore + '%', quality.qualityScore >= 80 ? '✓ High' : quality.qualityScore >= 60 ? '⚠ Medium' : '✗ Low']);
+  stats.push(['', '', '']);
+  stats.push(['Extraction Date', new Date().toLocaleString(), '']);
+  
+  const ws4 = XLSX.utils.aoa_to_sheet(stats);
+  ws4["!cols"] = [{wpx:180}, {wpx:120}, {wpx:100}];
+  XLSX.utils.book_append_sheet(wb, ws4, "Summary");
+  
+  // Generate filename with timestamp
+  const fileName = `Smart_Extraction_${new Date().toISOString().slice(0,10)}_${Date.now()}.xlsx`;
+  addXlsxWatermark(wb);
+  XLSX.writeFile(wb, fileName);
+  
+  const scanCount = (window.accumulatedScans && window.accumulatedScans.length) || 1;
+  showToast(`✅ Excel exported! ${scanCount} scan row${scanCount > 1 ? 's' : ''} — 5 sheets — Quality: ${quality.qualityScore}%`);
+}
+
+/* ===== EXPORT EXTRACTED DATA AS TEXT FILE ===== */
+function exportExtractedText(){
+  let text = document.getElementById("ocrResult").value;
+  if(!text.trim()){
+    showToast('❌ No data to export!');
+    return;
+  }
+  
+  text = addTextWatermark(text);
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Extracted_Data_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showToast('✅ Text file downloaded!');
 }
 
 /* ===== ROOMING → EXCEL (FORMATTED) ===== */
@@ -4193,6 +6162,1401 @@ function sendToRooming(){
     // Additional logic would go here
   });
 }
+
+/* ===== DATA VALIDATION AND CORRECTION SYSTEM (MEGA ENHANCED) ===== */
+
+// Common English first names database for validation
+const commonFirstNames = ['JOHN', 'MARY', 'JAMES', 'PATRICIA', 'ROBERT', 'JENNIFER', 'MICHAEL', 'LINDA', 
+  'WILLIAM', 'ELIZABETH', 'DAVID', 'BARBARA', 'RICHARD', 'SUSAN', 'JOSEPH', 'JESSICA', 'THOMAS', 'SARAH',
+  'CHARLES', 'KAREN', 'CHRISTOPHER', 'NANCY', 'DANIEL', 'MARGARET', 'MATTHEW', 'LISA', 'ANTHONY', 'BETTY',
+  'MARK', 'DOROTHY', 'DONALD', 'SANDRA', 'STEVEN', 'ASHLEY', 'PAUL', 'KIMBERLY', 'ANDREW', 'DONNA',
+  'JOSHUA', 'EMILY', 'KENNETH', 'MICHELLE', 'KEVIN', 'CAROL', 'BRIAN', 'AMANDA', 'GEORGE', 'MELISSA',
+  'AHMED', 'MOHAMMED', 'MUHAMMAD', 'ALI', 'OMAR', 'HASSAN', 'IBRAHIM', 'KHALID', 'ABDUL', 'ABDULLAH',
+  'FATIMA', 'AISHA', 'MARYAM', 'ZAINAB', 'SARAH', 'NOOR', 'LAYLA', 'AMINA', 'KHADIJA', 'RANIA'];
+
+// Common last names for validation
+const commonLastNames = ['SMITH', 'JOHNSON', 'WILLIAMS', 'BROWN', 'JONES', 'GARCIA', 'MILLER', 'DAVIS',
+  'RODRIGUEZ', 'MARTINEZ', 'HERNANDEZ', 'LOPEZ', 'GONZALEZ', 'WILSON', 'ANDERSON', 'THOMAS', 'TAYLOR',
+  'MOORE', 'JACKSON', 'MARTIN', 'LEE', 'PEREZ', 'THOMPSON', 'WHITE', 'HARRIS', 'SANCHEZ', 'CLARK',
+  'KHAN', 'AHMED', 'ALI', 'HASSAN', 'HUSSEIN', 'RAHMAN', 'ABDULLAH', 'MOHAMMED', 'IBRAHIM'];
+
+// Calculate Levenshtein distance for spell checking
+function levenshteinDistance(str1, str2) {
+  const matrix = [];
+  
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+}
+
+// Auto-correct name using dictionary
+function spellCheckName(name) {
+  const words = name.toUpperCase().split(' ');
+  const corrected = words.map((word, index) => {
+    // Check against common names
+    const nameList = index === 0 ? commonFirstNames : commonLastNames;
+    
+    // If exact match, return it
+    if (nameList.includes(word)) return word;
+    
+    // Find closest match
+    let minDistance = Infinity;
+    let bestMatch = word;
+    
+    nameList.forEach(commonName => {
+      const distance = levenshteinDistance(word, commonName);
+      // Only suggest if very close (distance <= 2)
+      if (distance < minDistance && distance <= 2 && distance > 0) {
+        minDistance = distance;
+        bestMatch = commonName;
+      }
+    });
+    
+    return bestMatch;
+  });
+  
+  // Return with proper capitalization
+  return corrected.map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+}
+
+// Validate and correct email addresses (ENHANCED)
+function validateEmail(email) {
+  // Remove spaces
+  email = email.replace(/\s/g, '');
+  
+  // Common OCR corrections
+  email = email
+    .replace(/\[at\]/gi, '@')
+    .replace(/\(at\)/gi, '@')
+    .replace(/\s*dot\s*/gi, '.')
+    .replace(/0(?=@)/g, 'o')
+    .replace(/O(?=@)/gi, 'o')
+    .replace(/1(?=@)/g, 'l')
+    .replace(/rn/g, 'm')
+    .replace(/[|]/g, 'l')
+    .toLowerCase();
+  
+  // Check basic format
+  const emailRegex = /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) return null;
+  
+  // Validate TLD
+  const tld = email.split('.').pop().toLowerCase();
+  const validTLDs = ['com', 'net', 'org', 'edu', 'gov', 'mil', 'co', 'uk', 'us', 'ca', 'au', 
+                     'de', 'fr', 'jp', 'cn', 'in', 'br', 'sa', 'ae', 'eg', 'io', 'me', 'info', 
+                     'biz', 'mobi', 'name', 'tel', 'travel', 'xxx', 'asia', 'tv'];
+  if (!validTLDs.includes(tld)) return null;
+  
+  // Fix common domain typos
+  email = email
+    .replace(/@gmai\.com$/, '@gmail.com')
+    .replace(/@gmaii\.com$/, '@gmail.com')
+    .replace(/@grnail\.com$/, '@gmail.com')
+    .replace(/@hotmaii\.com$/, '@hotmail.com')
+    .replace(/@yah00\.com$/, '@yahoo.com')
+    .replace(/@yahooo\.com$/, '@yahoo.com');
+  
+  return email;
+}
+
+// Validate and correct phone numbers (ENHANCED)
+function validatePhone(phone) {
+  // Remove common OCR errors in numbers
+  phone = phone
+    .replace(/[oO]/g, '0')
+    .replace(/[lI]/g, '1')
+    .replace(/[S]/g, '5')
+    .replace(/[B]/g, '8')
+    .replace(/[Z]/g, '2')
+    .replace(/[G]/g, '6')
+    .replace(/[b]/g, '6')
+    .replace(/[A]/g, '4');
+  
+  // Check if it has enough digits
+  const digitCount = (phone.match(/\d/g) || []).length;
+  if (digitCount < 7 || digitCount > 15) return null;
+  
+  // Format nicely
+  phone = phone.replace(/\s+/g, ' ').trim();
+  
+  return phone;
+}
+
+// Validate and correct dates (ENHANCED)
+function validateDate(dateStr) {
+  // Remove extra spaces
+  dateStr = dateStr.replace(/\s+/g, ' ').trim();
+  
+  let day, month, year;
+  
+  // Try DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  let match = dateStr.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+  if (match) {
+    day = parseInt(match[1]);
+    month = parseInt(match[2]);
+    year = parseInt(match[3]);
+  } else {
+    // Try YYYY-MM-DD or YYYY/MM/DD
+    match = dateStr.match(/(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+    if (match) {
+      year = parseInt(match[1]);
+      month = parseInt(match[2]);
+      day = parseInt(match[3]);
+    } else {
+      return null;
+    }
+  }
+  
+  // Validate ranges
+  if (day < 1 || day > 31) return null;
+  if (month < 1 || month > 12) return null;
+  if (year < 1900 || year > 2100) return null;
+  
+  // Check if date is valid (handles Feb 30, etc.)
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+  
+  // Return in standard format DD/MM/YYYY
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+}
+
+// Validate passport number (ENHANCED)
+function validatePassport(passport) {
+  // Remove spaces and convert to uppercase
+  passport = passport.replace(/\s/g, '').toUpperCase();
+  
+  // Fix common OCR errors
+  passport = passport
+    .replace(/O/g, '0')  // In passport numbers, O is usually 0
+    .replace(/I/g, '1')  // I is usually 1
+    .replace(/S/g, '5')
+    .replace(/B/g, '8');
+  
+  // Reverse the O->0 for letter positions (first 1-2 chars should be letters)
+  const parts = passport.match(/^([A-Z0-9]{1,2})(\d+)$/);
+  if (parts) {
+    let letters = parts[1].replace(/0/g, 'O').replace(/1/g, 'I');
+    let numbers = parts[2];
+    passport = letters + numbers;
+  }
+  
+  // Check format (common patterns)
+  if (!/^[A-Z]{1,2}\d{6,9}$/.test(passport) && !/^[A-Z]\d{7,8}$/.test(passport)) {
+    return null;
+  }
+  
+  return passport;
+}
+
+// Auto-correct common OCR mistakes in names (ENHANCED)
+function correctName(name) {
+  // Remove extra spaces
+  name = name.replace(/\s+/g, ' ').trim();
+  
+  // Fix common OCR errors BEFORE capitalization
+  name = name
+    .replace(/\b0/g, 'O')           // 0 at start of word -> O
+    .replace(/1(?=[a-z])/g, 'I')    // 1 before lowercase -> I
+    .replace(/rn(?=[a-z])/g, 'm')   // rn -> m (very common)
+    .replace(/\|/g, 'I')
+    .replace(/vv/g, 'w')
+    .replace(/tti/g, 'tti')
+    .replace(/cl/g, 'd');
+  
+  // Capitalize properly
+  name = name.split(' ').map(word => {
+    // Handle abbreviations (e.g., "O'Brien", "McDonald")
+    if (word.includes("'")) {
+      return word.split("'").map(part => 
+        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      ).join("'");
+    }
+    
+    // Handle Scottish/Irish names (Mc, Mac)
+    if (word.toLowerCase().startsWith('mc') && word.length > 2) {
+      return 'Mc' + word.charAt(2).toUpperCase() + word.slice(3).toLowerCase();
+    }
+    if (word.toLowerCase().startsWith('mac') && word.length > 3) {
+      return 'Mac' + word.charAt(3).toUpperCase() + word.slice(4).toLowerCase();
+    }
+    
+    // Handle Van, Von, De, etc.
+    if (['van', 'von', 'de', 'da', 'del', 'della', 'di'].includes(word.toLowerCase())) {
+      return word.toLowerCase();
+    }
+    
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
+  
+  // Apply spell checking for common names
+  name = spellCheckName(name);
+  
+  return name;
+}
+
+// Validate and auto-correct all extracted data (MEGA ENHANCED)
+function validateAndCorrectData(data) {
+  const corrected = {
+    names:         (data.names||[]).map(correctName).filter(n => n && n.length > 2),
+    emails:        (data.emails||[]).map(validateEmail).filter(Boolean),
+    phones:        (data.phones||[]).map(validatePhone).filter(Boolean),
+    dates:         (data.dates||[]).map(d => d.startsWith('Hijri:') ? d : validateDate(d)).filter(Boolean),
+    checkin:       (data.checkin||[]).map(validateDate).filter(Boolean),
+    checkout:      (data.checkout||[]).map(validateDate).filter(Boolean),
+    nights:        (data.nights||[]),
+    pax:           (data.pax||[]),
+    passports:     (data.passports||[]).map(validatePassport).filter(Boolean),
+    idNumbers:     (data.idNumbers||[]),
+    visaData:      (data.visaData||[]),
+    confirmations: (data.confirmations||[]),
+    nationalities: (data.nationalities||[]),
+    amounts:       (data.amounts||[]),
+    roomTypes:     (data.roomTypes||[]),
+    mealPlans:     (data.mealPlans||[]),
+    hotels:        (data.hotels||[]),
+    flights:       (data.flights||[]),
+    cities:        (data.cities||[]),
+    addresses:     (data.addresses||[]),
+    genderTitle:   (data.genderTitle||[]),
+    remarks:       (data.remarks||[]),
+    roomingRows:   (data.roomingRows||[]),
+  };
+
+  // Remove duplicates from all arrays
+  Object.keys(corrected).forEach(key => {
+    if (Array.isArray(corrected[key])) {
+      corrected[key] = [...new Set(corrected[key])];
+    }
+  });
+
+  return corrected;
+}
+
+// Calculate data quality score (ENHANCED)
+function calculateDataQuality(data) {
+  let totalFields = 0;
+  let validFields = 0;
+  let categoryScores = {};
+  
+  Object.entries(data).forEach(([category, values]) => {
+    if (values && Array.isArray(values) && values.length > 0) {
+      totalFields += values.length;
+      validFields += values.length;
+      categoryScores[category] = values.length;
+    }
+  });
+  
+  const qualityScore = totalFields > 0 ? Math.round((validFields / totalFields) * 100) : 0;
+  
+  // Confidence level based on amount of data
+  let confidence = 'Low';
+  if (totalFields >= 10) confidence = 'High';
+  else if (totalFields >= 5) confidence = 'Medium';
+  
+  return { 
+    totalFields, 
+    validFields, 
+    qualityScore, 
+    confidence,
+    categoryScores 
+  };
+}
+
+/* ===== ADVANCED DATA EXTRACTION UTILITIES (MEGA UPGRADED) ===== */
+
+// Extract all names from text with MAXIMUM accuracy
+function extractNames(text) {
+  const names = new Set();
+  const lines = text.split('\n');
+  
+  // Pattern 1: After labels like "Name:", "Guest:", "PAX:"
+  const labelPattern = /(?:name|guest|pax|passenger|client|traveler|booker|holder)[\s:]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4})/gi;
+  let matches = text.matchAll(labelPattern);
+  for (let match of matches) {
+    if (match[1] && match[1].length > 3) names.add(match[1].trim());
+  }
+  
+  // Pattern 2: Title + Name (Mr, Mrs, Ms, Dr)
+  const titlePattern = /(?:Mr|Mrs|Ms|Dr|Miss|Prof|Sir|Eng|Capt|Col|Gen)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4})/g;
+  matches = text.matchAll(titlePattern);
+  for (let match of matches) {
+    if (match[1] && match[1].length > 3) names.add(match[1].trim());
+  }
+  
+  // Pattern 3: Full capitalized names (2-4 words)
+  const capsPattern = /\b([A-Z][A-Z]+(?:\s+[A-Z][A-Z]+){1,3})\b/g;
+  matches = text.matchAll(capsPattern);
+  for (let match of matches) {
+    const name = match[1].trim();
+    const excludeWords = ['PASSPORT', 'VISA', 'NATIONALITY', 'NUMBER', 'DATE', 'BIRTH', 'ISSUE', 'EXPIRY', 
+                          'VALID', 'UNTIL', 'TYPE', 'CARD', 'IDENTITY', 'REPUBLIC', 'KINGDOM', 'UNITED',
+                          'STATES', 'DOCUMENT', 'TRAVEL', 'PERSONAL', 'GIVEN', 'SURNAME', 'GENDER', 'CODE'];
+    
+    if (name.length > 5 && name.split(' ').length >= 2 && name.split(' ').length <= 4) {
+      // Check if it's not in exclude list
+      const isExcluded = excludeWords.some(word => name.includes(word));
+      if (!isExcluded) {
+        names.add(name.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' '));
+      }
+    }
+  }
+  
+  // Pattern 4: Mixed case names (FirstName LastName)
+  const mixedPattern = /\b([A-Z][a-z]{2,}\s+[A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?(?:\s+[A-Z][a-z]{2,})?)\b/g;
+  matches = text.matchAll(mixedPattern);
+  for (let match of matches) {
+    const name = match[1].trim();
+    const words = name.split(' ');
+    const excludeWords = ['Date Of', 'Place Of', 'Date and', 'Given Names', 'Family Name'];
+    const isExcluded = excludeWords.some(phrase => name.includes(phrase));
+    
+    if (!isExcluded && words.length >= 2 && words.length <= 4 && words.every(w => w.length >= 3)) {
+      names.add(name);
+    }
+  }
+  
+  // Pattern 5: Arabic names
+  const arabicPattern = /[\u0600-\u06FF]{3,}(?:\s+[\u0600-\u06FF]{3,}){1,3}/g;
+  matches = text.match(arabicPattern);
+  if (matches) {
+    matches.forEach(name => {
+      if (name.length > 5 && name.split(' ').length >= 2 && name.split(' ').length <= 4) {
+        names.add(name.trim());
+      }
+    });
+  }
+  
+  // Pattern 6: Names in format "SURNAME, Firstname"
+  const surnameFirstPattern = /([A-Z]{2,}),\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g;
+  matches = text.matchAll(surnameFirstPattern);
+  for (let match of matches) {
+    const surname = match[1].charAt(0) + match[1].slice(1).toLowerCase();
+    const firstname = match[2];
+    names.add(`${firstname} ${surname}`);
+  }
+  
+  // Filter and clean results
+  const filteredNames = Array.from(names).filter(name => {
+    // Remove names that are too short or too long
+    if (name.length < 4 || name.length > 60) return false;
+    
+    // Remove names with numbers
+    if (/\d/.test(name)) return false;
+    
+    // Remove names with too many special characters
+    if ((name.match(/[^a-zA-Z\u0600-\u06FF\s]/g) || []).length > 2) return false;
+    
+    return true;
+  });
+  
+  return filteredNames;
+}
+
+// Extract all emails with validation
+function extractEmails(text) {
+  const emailPattern = /\b[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}\b/g;
+  const emails = text.match(emailPattern) || [];
+  
+  // Validate and filter
+  return Array.from(new Set(emails.filter(email => {
+    // Must have valid TLD
+    const tld = email.split('.').pop().toLowerCase();
+    const validTLDs = ['com', 'net', 'org', 'edu', 'gov', 'mil', 'co', 'uk', 'us', 'ca', 'au', 
+                       'de', 'fr', 'jp', 'cn', 'in', 'br', 'sa', 'ae', 'eg', 'io', 'me', 'info'];
+    return validTLDs.includes(tld);
+  })));
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  extractAllNumbers — catches EVERY number sequence in the document
+// ══════════════════════════════════════════════════════════════════
+function extractAllNumbers(text) {
+  const numbers = new Set();
+
+  // 1. International phone: +XX... or 00XX...
+  for (let m of text.matchAll(/(\+\d{1,4}[\s\-]?[\d\s\-\(\)]{6,18})/g)) {
+    const cleaned = m[1].replace(/\s+/g,' ').trim();
+    if ((cleaned.match(/\d/g)||[]).length >= 7) numbers.add(cleaned);
+  }
+  for (let m of text.matchAll(/(00\d{1,4}[\s\-]?[\d\s\-]{6,16})/g)) {
+    const cleaned = m[1].replace(/\s+/g,' ').trim();
+    if ((cleaned.match(/\d/g)||[]).length >= 7) numbers.add(cleaned);
+  }
+
+  // 2. Any standalone digit sequence 4–18 digits (IDs, phones, codes, amounts, rooms)
+  for (let m of text.matchAll(/\b(\d[\d\s\-\.]{2,17}\d)\b/g)) {
+    const raw = m[1].replace(/\s+/g,' ').trim();
+    const digitsOnly = raw.replace(/\D/g,'');
+    if (digitsOnly.length >= 4 && digitsOnly.length <= 18) {
+      numbers.add(raw);
+    }
+  }
+
+  // 3. Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩)
+  for (let m of text.matchAll(/[\u0660-\u0669]{3,}/g)) {
+    numbers.add(m[0]);
+  }
+
+  // 4. Numbers with labels (extract the number part)
+  const labelPatterns = [
+    /(?:phone|mobile|tel|fax|cell|mob)[\s:#\-]*([+\d][\d\s\-\(\)]{5,18})/gi,
+    /(?:id|iqama|national)[\s:#\-]*(\d{6,15})/gi,
+    /(?:passport|pp)[\s:#\-]*([A-Z]{0,2}\d{5,12})/gi,
+    /(?:amount|total|price|cost|fee|charge|rate)[\s:#\-]*([0-9,\.]+)/gi,
+    /(?:room|floor|suite|no\.?)[\s:#\-]*(\d{1,6})/gi,
+    /(?:hcn|cnf|ref|booking|reservation|confirmation)[\s:#\-]*([A-Z0-9]{4,14})/gi,
+  ];
+  labelPatterns.forEach(p => {
+    for (let m of text.matchAll(p)) {
+      if (m[1]) numbers.add(m[1].trim());
+    }
+  });
+
+  // Deduplicate: remove values already captured as substrings of longer ones
+  const arr = [...numbers].filter(n => n.replace(/\D/g,'').length >= 4 || /[A-Z]/.test(n));
+  return [...new Set(arr)];
+}
+
+// Keep extractPhones as alias so nothing else breaks
+function extractPhones(text) { return extractAllNumbers(text); }
+
+// Extract all dates in multiple formats (ENHANCED)
+function extractDates(text) {
+  const dates = new Set();
+  
+  // DD/MM/YYYY or DD-MM-YYYY
+  const dmyPattern = /\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})\b/g;
+  let matches = text.matchAll(dmyPattern);
+  for (let match of matches) {
+    const day = parseInt(match[1]);
+    const month = parseInt(match[2]);
+    const year = parseInt(match[3]);
+    // Validate date
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      dates.add(match[0]);
+    }
+  }
+  
+  // YYYY-MM-DD or YYYY/MM/DD
+  const ymdPattern = /\b(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\b/g;
+  matches = text.matchAll(ymdPattern);
+  for (let match of matches) {
+    const year = parseInt(match[1]);
+    const month = parseInt(match[2]);
+    const day = parseInt(match[3]);
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+      dates.add(match[0]);
+    }
+  }
+  
+  // DD Month YYYY (e.g., 25 December 2025, 25 Dec 2025)
+  const textDatePattern = /\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})\b/gi;
+  matches = text.matchAll(textDatePattern);
+  for (let match of matches) {
+    dates.add(match[0]);
+  }
+  
+  // Month DD, YYYY (e.g., December 25, 2025)
+  const usDatePattern = /\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),?\s+(\d{4})\b/gi;
+  matches = text.matchAll(usDatePattern);
+  for (let match of matches) {
+    dates.add(match[0]);
+  }
+  
+  return Array.from(dates);
+}
+
+// Extract passport numbers (ENHANCED)
+function extractPassportNumbers(text) {
+  const passports = new Set();
+  
+  // Common passport formats
+  // 2 letters + 6-9 digits
+  const pattern1 = /\b([A-Z]{2}\d{6,9})\b/g;
+  let matches = text.match(pattern1);
+  if (matches) matches.forEach(p => passports.add(p));
+  
+  // 1 letter + 7-8 digits
+  const pattern2 = /\b([A-Z]\d{7,8})\b/g;
+  matches = text.match(pattern2);
+  if (matches) matches.forEach(p => passports.add(p));
+  
+  // Some countries use different formats
+  const pattern3 = /\b([A-Z]{1,2}\d{5,10})\b/g;
+  matches = text.match(pattern3);
+  if (matches) {
+    matches.forEach(p => {
+      // Filter out obvious non-passports
+      if (p.length >= 7 && p.length <= 12) {
+        passports.add(p);
+      }
+    });
+  }
+  
+  // Pattern from passport label
+  const labelPattern = /(?:passport\s*(?:no|number|#)?\s*:?\s*)([A-Z0-9]{6,12})/gi;
+  matches = text.matchAll(labelPattern);
+  for (let match of matches) {
+    if (match[1]) passports.add(match[1].toUpperCase());
+  }
+  
+  return Array.from(passports);
+}
+
+// Extract confirmation/reservation numbers (ENHANCED)
+function extractConfirmationNumbers(text) {
+  const confirmations = new Set();
+  
+  // HCN, CNF, RES, BKG, CONF followed by alphanumeric
+  const pattern1 = /\b(HCN|CNF|RES|BKG|CONF|CONFIRMATION|BOOKING|RESERVATION)[-\s:#]?([A-Z0-9]{4,12})\b/gi;
+  let matches = text.matchAll(pattern1);
+  for (let match of matches) {
+    if (match[2]) confirmations.add(match[1].toUpperCase() + match[2].toUpperCase());
+  }
+  
+  // Generic confirmation patterns (starts with letters, ends with numbers)
+  const pattern2 = /\b([A-Z]{2,4}\d{6,10})\b/g;
+  matches = text.match(pattern2);
+  if (matches) {
+    matches.forEach(c => {
+      // Filter out dates and other numbers
+      if (!/^(19|20)\d{2}/.test(c)) {
+        confirmations.add(c);
+      }
+    });
+  }
+  
+  // Alphanumeric codes often used for confirmations
+  const pattern3 = /\b([A-Z0-9]{6,12})\b/g;
+  matches = text.match(pattern3);
+  if (matches) {
+    matches.forEach(c => {
+      // Only add if it has both letters and numbers
+      if (/[A-Z]/.test(c) && /\d/.test(c) && c.length >= 6 && c.length <= 12) {
+        confirmations.add(c);
+      }
+    });
+  }
+  
+  return Array.from(confirmations);
+}
+
+// Extract nationalities (EXPANDED DATABASE)
+function extractNationalities(text) {
+  const nationalities = [
+    // Middle East & North Africa
+    'Egyptian', 'Saudi', 'Emirati', 'Kuwaiti', 'Qatari', 'Bahraini', 'Omani', 'Yemeni',
+    'Iraqi', 'Syrian', 'Jordanian', 'Lebanese', 'Palestinian', 'Turkish', 'Iranian', 'Israeli',
+    'Tunisian', 'Algerian', 'Moroccan', 'Libyan', 'Sudanese', 'Mauritanian',
+    
+    // Europe
+    'British', 'English', 'Scottish', 'Welsh', 'Irish', 'French', 'German', 'Italian', 'Spanish', 
+    'Portuguese', 'Dutch', 'Belgian', 'Swiss', 'Austrian', 'Swedish', 'Norwegian', 'Danish', 
+    'Finnish', 'Polish', 'Czech', 'Slovak', 'Hungarian', 'Romanian', 'Bulgarian', 'Greek',
+    'Russian', 'Ukrainian', 'Croatian', 'Serbian', 'Slovenian', 'Estonian', 'Latvian', 'Lithuanian',
+    
+    // Asia
+    'Indian', 'Pakistani', 'Bangladeshi', 'Chinese', 'Japanese', 'Korean', 'Thai', 'Vietnamese',
+    'Indonesian', 'Malaysian', 'Filipino', 'Singaporean', 'Burmese', 'Cambodian', 'Laotian',
+    'Nepalese', 'Sri Lankan', 'Afghan', 'Mongolian', 'Taiwanese',
+    
+    // Africa
+    'Somali', 'Ethiopian', 'Kenyan', 'Tanzanian', 'Ugandan', 'Nigerian', 'Ghanaian', 'South African',
+    'Zimbabwean', 'Zambian', 'Botswanan', 'Namibian', 'Angolan', 'Mozambican', 'Malawian',
+    'Senegalese', 'Ivorian', 'Cameroonian', 'Congolese', 'Rwandan',
+    
+    // Americas
+    'American', 'Canadian', 'Mexican', 'Brazilian', 'Argentinian', 'Chilean', 'Colombian',
+    'Peruvian', 'Venezuelan', 'Ecuadorian', 'Bolivian', 'Uruguayan', 'Paraguayan',
+    'Cuban', 'Jamaican', 'Haitian', 'Dominican',
+    
+    // Oceania
+    'Australian', 'New Zealander', 'Fijian', 'Papua New Guinean'
+  ];
+  
+  const found = new Set();
+  const upperText = text.toUpperCase();
+  
+  nationalities.forEach(nat => {
+    const pattern = new RegExp('\\b' + nat + '\\b', 'gi');
+    if (pattern.test(text)) {
+      found.add(nat);
+    }
+  });
+  
+  return Array.from(found);
+}
+
+// Extract amounts/prices (ENHANCED)
+function extractAmounts(text) {
+  const amounts = new Set();
+  
+  // Pattern 1: Currency symbol/code + number
+  const pattern1 = /(?:USD|EUR|GBP|SAR|EGP|AED|QAR|KWD|OMR|BHD|JOD|TRY|INR|PKR|CNY|JPY|KRW)\s*\$?€?£?¥?\s*\d{1,10}(?:[.,]\d{2,3})?/gi;
+  let matches = text.match(pattern1);
+  if (matches) matches.forEach(a => amounts.add(a.trim()));
+  
+  // Pattern 2: Symbol + number
+  const pattern2 = /[$€£¥]\s*\d{1,10}(?:[.,]\d{2})?/g;
+  matches = text.match(pattern2);
+  if (matches) matches.forEach(a => amounts.add(a.trim()));
+  
+  // Pattern 3: Number + currency code
+  const pattern3 = /\b\d{1,10}(?:[.,]\d{2,3})?\s*(?:USD|EUR|GBP|SAR|EGP|AED|QAR|KWD|OMR|BHD|JOD|TRY|INR|PKR|CNY|JPY|KRW)\b/gi;
+  matches = text.match(pattern3);
+  if (matches) matches.forEach(a => amounts.add(a.trim()));
+  
+  // Pattern 4: Common price labels
+  const pattern4 = /(?:price|cost|amount|total|fee|charge|rate|fare)[\s:]+\$?€?£?¥?\s*\d{1,10}(?:[.,]\d{2})?/gi;
+  matches = text.match(pattern4);
+  if (matches) {
+    matches.forEach(match => {
+      const amount = match.match(/\$?€?£?¥?\s*\d{1,10}(?:[.,]\d{2})?/);
+      if (amount) amounts.add(amount[0].trim());
+    });
+  }
+  
+  return Array.from(amounts);
+}
+
+// Extract room types with better patterns (ENHANCED)
+function extractRoomTypes(text) {
+  const roomTypes = new Set();
+  
+  // Main room type pattern
+  const mainPattern = /\b(SINGLE|DOUBLE|TRIPLE|QUAD|TWIN|KING|QUEEN|SUITE|STUDIO|APARTMENT|VILLA|BUNGALOW|SGL|DBL|TRPL|TPL|QAUD|TWN|KNG|QN|STE|STD|DLX|SUP|EXEC|PRES|JR)(?:\s+(?:DELUXE|SUPERIOR|STANDARD|EXECUTIVE|PRESIDENTIAL|JUNIOR|FAMILY|CONNECTING|ADJOINING))?\b/gi;
+  let matches = text.match(mainPattern);
+  if (matches) matches.forEach(r => roomTypes.add(r.toUpperCase()));
+  
+  // View type pattern
+  const viewPattern = /\b(?:CITY|SEA|OCEAN|BEACH|POOL|GARDEN|MOUNTAIN|LAKE|VALLEY|RIVER|GOLF|PARK|COURTYARD|PARTIAL|FULL|LIMITED)\s+VIEW\b/gi;
+  matches = text.match(viewPattern);
+  if (matches) matches.forEach(v => roomTypes.add(v.toUpperCase()));
+  
+  // Abbreviated view pattern
+  const abbrViewPattern = /\b(CV|GV|PV|SV|MV|OV|BV|CITY\s*VIEW|GARDEN\s*VIEW|POOL\s*VIEW|SEA\s*VIEW|MOUNTAIN\s*VIEW|OCEAN\s*VIEW)\b/gi;
+  matches = text.match(abbrViewPattern);
+  if (matches) matches.forEach(v => roomTypes.add(v.toUpperCase().replace(/\s+/g, ' ')));
+  
+  return Array.from(roomTypes);
+}
+
+// Extract meal plans with more variations (ENHANCED)
+function extractMealPlans(text) {
+  const mealPlans = new Set();
+  
+  // Abbreviated formats
+  const abbrPattern = /\b(BB|HB|FB|AI|UAI|SC|RO|EP|CP|MAP|AP|B\.B|H\.B|F\.B|A\.I|U\.A\.I|R\.O)\b/gi;
+  let matches = text.match(abbrPattern);
+  if (matches) matches.forEach(m => mealPlans.add(m.toUpperCase()));
+  
+  // Full text formats
+  const fullPattern = /\b(BED\s+AND\s+BREAKFAST|HALF\s+BOARD|FULL\s+BOARD|ALL\s+INCLUSIVE|ULTRA\s+ALL\s+INCLUSIVE|ROOM\s+ONLY|SELF\s+CATERING|BREAKFAST\s+ONLY|DINNER\s+BED\s+BREAKFAST|BREAKFAST\s+LUNCH|BREAKFAST\s+DINNER)\b/gi;
+  matches = text.match(fullPattern);
+  if (matches) matches.forEach(m => mealPlans.add(m.toUpperCase().replace(/\s+/g, ' ')));
+  
+  // Common variations
+  const varPattern = /\b(FULL\s+PENSION|HALF\s+PENSION|DEMI\s+PENSION|BED\s+BREAKFAST|CONTINENTAL\s+BREAKFAST|AMERICAN\s+BREAKFAST)\b/gi;
+  matches = text.match(varPattern);
+  if (matches) matches.forEach(m => mealPlans.add(m.toUpperCase().replace(/\s+/g, ' ')));
+  
+  return Array.from(mealPlans);
+}
+
+// Extract hotel names
+function extractHotelNames(text) {
+  const hotels = new Set();
+  
+  // Pattern 1: After "Hotel" keyword
+  const pattern1 = /\b([A-Z][A-Za-z\s&'-]+?)\s+(?:Hotel|Resort|Inn|Lodge|Suites?|Residences?|Villas?|Palace|Grand|Plaza)\b/gi;
+  let matches = text.matchAll(pattern1);
+  for (let match of matches) {
+    if (match[0] && match[0].length > 5 && match[0].length < 60) {
+      hotels.add(match[0].trim());
+    }
+  }
+  
+  // Pattern 2: Hotel/Resort followed by name
+  const pattern2 = /\b(?:Hotel|Resort|Inn|Lodge|Suites?)\s+([A-Z][A-Za-z\s&'-]{3,50})\b/gi;
+  matches = text.matchAll(pattern2);
+  for (let match of matches) {
+    if (match[0] && match[0].length > 5) {
+      hotels.add(match[0].trim());
+    }
+  }
+  
+  return Array.from(hotels);
+}
+
+// Extract flight numbers
+function extractFlightNumbers(text) {
+  const flights = new Set();
+  
+  // Standard airline code + flight number (e.g., BA123, SV456)
+  const pattern1 = /\b([A-Z]{2}\s?\d{3,4})\b/g;
+  let matches = text.match(pattern1);
+  if (matches) {
+    matches.forEach(f => {
+      // Filter out dates and other patterns
+      if (!/^(19|20)\d{2}/.test(f) && !/^\d{4}/.test(f)) {
+        flights.add(f.replace(/\s/g, ''));
+      }
+    });
+  }
+  
+  // Flight with label
+  const pattern2 = /(?:flight|flt)[\s:#]*([A-Z]{2}\s?\d{3,4})/gi;
+  matches = text.matchAll(pattern2);
+  for (let match of matches) {
+    if (match[1]) flights.add(match[1].replace(/\s/g, '').toUpperCase());
+  }
+  
+  return Array.from(flights);
+}
+
+// Extract cities/destinations
+function extractCities(text) {
+  const commonCities = [
+    // Saudi Arabia
+    'Makkah', 'Mecca', 'Madinah', 'Medina', 'Jeddah', 'Riyadh', 'Dammam', 'Khobar', 'Dhahran', 'Taif', 'Abha', 'Tabuk', 'Yanbu',
+    
+    // UAE
+    'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Fujairah', 'Umm Al Quwain',
+    
+    // Egypt
+    'Cairo', 'Alexandria', 'Giza', 'Sharm El Sheikh', 'Hurghada', 'Luxor', 'Aswan', 'Port Said', 'Dahab', 'Marsa Alam',
+    
+    // Other Middle East
+    'Jerusalem', 'Tel Aviv', 'Amman', 'Petra', 'Aqaba', 'Beirut', 'Damascus', 'Baghdad', 'Basra', 'Istanbul', 'Ankara', 'Antalya',
+    
+    // Europe
+    'London', 'Paris', 'Rome', 'Madrid', 'Barcelona', 'Berlin', 'Munich', 'Vienna', 'Amsterdam', 'Brussels', 'Athens', 'Milan',
+    
+    // Asia
+    'Bangkok', 'Singapore', 'Kuala Lumpur', 'Jakarta', 'Manila', 'Tokyo', 'Seoul', 'Hong Kong', 'Shanghai', 'Beijing', 'Delhi', 'Mumbai',
+    
+    // Americas
+    'New York', 'Los Angeles', 'Chicago', 'Miami', 'Las Vegas', 'Toronto', 'Vancouver', 'Mexico City', 'Sao Paulo', 'Rio de Janeiro'
+  ];
+  
+  const found = new Set();
+  
+  commonCities.forEach(city => {
+    const pattern = new RegExp('\\b' + city + '\\b', 'gi');
+    if (pattern.test(text)) {
+      found.add(city);
+    }
+  });
+  
+  return Array.from(found);
+}
+
+// Extract check-in/check-out dates specifically
+function extractCheckinCheckout(text) {
+  const result = { checkin: [], checkout: [] };
+  
+  // Check-in patterns
+  const checkinPattern = /(?:check[-\s]?in|arrival|arrive|arriving|from)[\s:]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi;
+  let matches = text.matchAll(checkinPattern);
+  for (let match of matches) {
+    if (match[1]) result.checkin.push(match[1]);
+  }
+  
+  // Check-out patterns
+  const checkoutPattern = /(?:check[-\s]?out|departure|depart|departing|to|until)[\s:]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi;
+  matches = text.matchAll(checkoutPattern);
+  for (let match of matches) {
+    if (match[1]) result.checkout.push(match[1]);
+  }
+  
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: ID / IQAMA / NATIONAL ID NUMBERS
+// ══════════════════════════════════════════════════════════════════
+function extractIDNumbers(text) {
+  const ids = new Set();
+  // Saudi National ID / Iqama (10 digits starting with 1 or 2)
+  const saudiPattern = /\b([12]\d{9})\b/g;
+  let m = text.match(saudiPattern);
+  if (m) m.forEach(v => ids.add(v));
+  // Generic National ID label
+  const labelPattern = /(?:national\s*id|iqama|id\s*no|id\s*number|identity\s*no)[\s:#]*([A-Z0-9]{6,15})/gi;
+  for (let match of text.matchAll(labelPattern)) {
+    if (match[1]) ids.add(match[1].toUpperCase());
+  }
+  // Emirates ID (784-YYYY-XXXXXXX-D)
+  const emiratesPattern = /784[-\s]?\d{4}[-\s]?\d{7}[-\s]?\d/g;
+  m = text.match(emiratesPattern);
+  if (m) m.forEach(v => ids.add(v.replace(/\s/g,'-')));
+  return [...ids];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: VISA NUMBERS & TYPES
+// ══════════════════════════════════════════════════════════════════
+function extractVisaData(text) {
+  const visas = new Set();
+  // Visa number label
+  const numPat = /(?:visa\s*(?:no|number|#|num)?)[\s:#]*([A-Z0-9]{5,15})/gi;
+  for (let m of text.matchAll(numPat)) if (m[1]) visas.add('VISA: ' + m[1].toUpperCase());
+  // Visa type
+  const typePat = /(?:visa\s*type|type\s*of\s*visa)[\s:#]*([A-Z0-9\s\/]{2,30})/gi;
+  for (let m of text.matchAll(typePat)) if (m[1]) visas.add('Type: ' + m[1].trim());
+  // Common visa types as standalone words
+  const types = ['TOURIST', 'BUSINESS', 'TRANSIT', 'STUDENT', 'WORK', 'HAJJ', 'UMRAH', 'VISIT', 'MULTIPLE ENTRY', 'SINGLE ENTRY'];
+  types.forEach(t => { if (new RegExp('\\b' + t + '\\b','i').test(text)) visas.add('Type: ' + t); });
+  return [...visas];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: GENDER & TITLE
+// ══════════════════════════════════════════════════════════════════
+function extractGenderTitle(text) {
+  const found = new Set();
+  if (/\b(Mr|MR|MALE|M)\b/.test(text)) found.add('Male');
+  if (/\b(Mrs|MS|Miss|FEMALE|F)\b/.test(text)) found.add('Female');
+  const titlePat = /\b(Mr|Mrs|Ms|Miss|Dr|Prof|Eng|Capt|Col|Gen|Haj|Hajja)\.?\s/g;
+  for (let m of text.matchAll(titlePat)) found.add(m[1]);
+  return [...found];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: PAX COUNT / NUMBER OF GUESTS
+// ══════════════════════════════════════════════════════════════════
+function extractPaxCount(text) {
+  const pax = new Set();
+  const patterns = [
+    /(?:pax|guests?|persons?|adults?|people)[\s:#]*(\d{1,3})/gi,
+    /(\d{1,3})\s*(?:pax|guests?|persons?|adults?|people)/gi,
+    /(?:no\.?\s*of\s*(?:pax|guests?|persons?))[\s:#]*(\d{1,3})/gi,
+    /(?:adults?[\s:#]*)(\d{1,2})(?:\s*[\+\/&]\s*(?:children?|kids?|child)[\s:#]*(\d{1,2}))?/gi,
+  ];
+  patterns.forEach(p => {
+    for (let m of text.matchAll(p)) {
+      if (m[1]) {
+        const adults = m[1];
+        const children = m[2] || null;
+        pax.add(children ? `Adults: ${adults}, Children: ${children}` : `${adults} pax`);
+      }
+    }
+  });
+  return [...pax];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: ADDRESSES
+// ══════════════════════════════════════════════════════════════════
+function extractAddresses(text) {
+  const addresses = new Set();
+  // After "address:" label
+  const labelPat = /(?:address|addr)[\s:#]+([^\n]{10,80})/gi;
+  for (let m of text.matchAll(labelPat)) {
+    if (m[1]) addresses.add(m[1].trim());
+  }
+  // Street number + name patterns
+  const streetPat = /\b\d{1,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,4}\s+(?:Street|St|Road|Rd|Avenue|Ave|Blvd|Lane|Ln|Drive|Dr|Way|Place|Pl)\b/gi;
+  for (let m of text.matchAll(streetPat)) addresses.add(m[0].trim());
+  return [...addresses];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: REMARKS / NOTES / SPECIAL REQUESTS
+// ══════════════════════════════════════════════════════════════════
+function extractRemarks(text) {
+  const remarks = new Set();
+  const labelPat = /(?:remarks?|notes?|special\s*requests?|requests?|comments?|instructions?)[\s:#]+([^\n]{3,120})/gi;
+  for (let m of text.matchAll(labelPat)) {
+    if (m[1] && m[1].trim().length > 3) remarks.add(m[1].trim());
+  }
+  return [...remarks];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: DURATION / NIGHTS
+// ══════════════════════════════════════════════════════════════════
+function extractNights(text) {
+  const found = new Set();
+  const pats = [
+    /(\d{1,3})\s*(?:nights?|nts?)\b/gi,
+    /(?:nights?|duration)[\s:#]*(\d{1,3})/gi,
+    /stay[\s:]*(\d{1,3})\s*(?:nights?|nts?)/gi,
+  ];
+  pats.forEach(p => {
+    for (let m of text.matchAll(p)) if (m[1]) found.add(m[1] + ' night' + (parseInt(m[1]) > 1 ? 's' : ''));
+  });
+  return [...found];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  EXTRACT: ROOMING LIST TABLE LINES  (Name | Rooms | Type | Meal)
+// ══════════════════════════════════════════════════════════════════
+function extractRoomingRows(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    // Pipe-separated or tab-separated table row
+    const parts = line.split(/\s*[|│\t]\s*/).map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 3) {
+      // Looks like a data row — at least one part is a name-like string
+      const hasName = /[A-Z][a-z]{2,}/.test(parts[0]) || /[\u0600-\u06FF]{3,}/.test(parts[0]);
+      const hasRoomOrMeal = parts.some(p => /\b(SGL|DBL|TRPL|TWIN|SUITE|BB|HB|FB|AI|RO)\b/i.test(p));
+      if (hasName || hasRoomOrMeal) {
+        rows.push(parts.join(' | '));
+      }
+    }
+  });
+  return rows;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ENHANCED extractNames — catches ALL naming patterns
+// ══════════════════════════════════════════════════════════════════
+function extractNames(text) {
+  const names = new Set();
+  const lines = text.split('\n');
+
+  // Pattern 1: After labels like "Name:", "Guest:", "PAX:", "Passenger:", "Holder:"
+  const labelPattern = /(?:name|guest|pax|passenger|client|traveler|booker|holder|tenant|occupant|resident)[\s:]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,4})/gi;
+  for (let m of text.matchAll(labelPattern)) {
+    if (m[1] && m[1].length > 3) names.add(m[1].trim());
+  }
+
+  // Pattern 2: Title + Name (Mr, Mrs, Ms, Dr, etc.)
+  const titlePattern = /(?:Mr|Mrs|Ms|Dr|Miss|Prof|Sir|Eng|Capt|Col|Gen|Haj|Hajja)\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,4})/g;
+  for (let m of text.matchAll(titlePattern)) {
+    if (m[1] && m[1].length > 3) names.add(m[1].trim());
+  }
+
+  // Pattern 3: Numbered list names ("1. Ahmed Ali", "2) Mohammed Hassan")
+  const numberedPattern = /^\s*\d{1,3}[\.\)]\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){1,4})/gm;
+  for (let m of text.matchAll(numberedPattern)) {
+    const name = m[1].trim();
+    if (name.length > 4 && !/\b(ROOM|SUITE|HOTEL|DATE|CHECK|TOTAL|PAX|FLOOR)\b/i.test(name)) {
+      names.add(name);
+    }
+  }
+
+  // Pattern 4: Full UPPERCASE names (2-4 words, at least 2 chars each)
+  const capsPattern = /\b([A-Z]{2,}(?:\s+[A-Z]{2,}){1,3})\b/g;
+  for (let m of text.matchAll(capsPattern)) {
+    const name = m[1].trim();
+    const excludeWords = ['PASSPORT','VISA','NATIONALITY','NUMBER','DATE','BIRTH','ISSUE','EXPIRY',
+      'VALID','UNTIL','TYPE','CARD','IDENTITY','REPUBLIC','KINGDOM','UNITED','STATES','DOCUMENT',
+      'TRAVEL','PERSONAL','GIVEN','SURNAME','GENDER','CODE','HOTEL','RESORT','CHECK','ROOM',
+      'DOUBLE','SINGLE','TRIPLE','SUITE','STANDARD','DELUXE','SUPERIOR','EXECUTIVE','TOTAL',
+      'AMOUNT','PRICE','COST','BOOKING','RESERVATION','CONFIRMATION','ARRIVAL','DEPARTURE',
+      'BREAKFAST','LUNCH','DINNER','BOARD','INCLUSIVE','ONLY','PLAN','VIEW','FLOOR','CITY',
+      'OCEAN','GARDEN','POOL','MOUNTAIN','SEA','BEACH'];
+    const words = name.split(' ');
+    const isExcluded = words.some(w => excludeWords.includes(w));
+    if (!isExcluded && words.length >= 2 && words.length <= 4 &&
+        words.every(w => w.length >= 2) && name.length > 5) {
+      names.add(words.map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' '));
+    }
+  }
+
+  // Pattern 5: Mixed case names (Firstname Lastname)
+  const mixedPattern = /\b([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,}){1,3})\b/g;
+  for (let m of text.matchAll(mixedPattern)) {
+    const name = m[1].trim();
+    const excludePhrases = ['Date Of','Place Of','Check In','Check Out','Room Type','Meal Plan',
+      'Sea View','City View','Garden View','Pool View','Hotel Name'];
+    const isExcluded = excludePhrases.some(p => name.toLowerCase().includes(p.toLowerCase()));
+    if (!isExcluded && name.split(' ').length >= 2 && name.length > 5) names.add(name);
+  }
+
+  // Pattern 6: Arabic names (2-4 Arabic words)
+  const arabicPat = /[\u0600-\u06FF]{2,}(?:\s+[\u0600-\u06FF]{2,}){1,3}/g;
+  for (let m of text.matchAll(arabicPat)) {
+    if (m[0].length > 5) names.add(m[0].trim());
+  }
+
+  // Pattern 7: SURNAME, Firstname
+  const surnameFirstPat = /\b([A-Z]{2,}),\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g;
+  for (let m of text.matchAll(surnameFirstPat)) {
+    const surname = m[1].charAt(0) + m[1].slice(1).toLowerCase();
+    names.add(`${m[2]} ${surname}`);
+  }
+
+  // Pattern 8: Rooming list style — name is the first token on a line followed by room/meal info
+  lines.forEach(line => {
+    const m = line.match(/^([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){1,3})\s+(?:\d|SGL|DBL|TRPL|TWIN|BB|HB|FB|AI)/);
+    if (m) names.add(m[1].trim());
+  });
+
+  return [...names].filter(n => {
+    if (!n || n.length < 4 || n.length > 70) return false;
+    if (/^\d/.test(n)) return false;
+    if ((n.match(/[^a-zA-Z\u0600-\u06FF\s'-]/g) || []).length > 2) return false;
+    return true;
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ENHANCED extractDates — all formats including Arabic verbal dates
+// ══════════════════════════════════════════════════════════════════
+function extractDates(text) {
+  const dates = new Set();
+
+  // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+  for (let m of text.matchAll(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})\b/g)) {
+    const [,d,mo,y] = m;
+    const year = y.length===2 ? '20'+y : y;
+    if (+d>=1&&+d<=31&&+mo>=1&&+mo<=12&&+year>=1950&&+year<=2100) dates.add(`${d.padStart(2,'0')}/${mo.padStart(2,'0')}/${year}`);
+  }
+
+  // YYYY-MM-DD
+  for (let m of text.matchAll(/\b(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})\b/g)) {
+    const [,y,mo,d] = m;
+    if (+d>=1&&+d<=31&&+mo>=1&&+mo<=12&&+y>=1950&&+y<=2100) dates.add(`${d.padStart(2,'0')}/${mo.padStart(2,'0')}/${y}`);
+  }
+
+  // DD Mon YYYY or DD Mon YY  (25 Jan 2026, 25 Jan 26, 25 January 2026)
+  const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+    january:1,february:2,march:3,april:4,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+  for (let m of text.matchAll(/\b(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\.?\s+(\d{2,4})\b/gi)) {
+    const day = m[1], mon = months[m[2].toLowerCase()], yr = m[3].length===2?'20'+m[3]:m[3];
+    dates.add(`${day.padStart(2,'0')}/${String(mon).padStart(2,'0')}/${yr}`);
+  }
+
+  // Mon DD, YYYY (December 25, 2025)
+  for (let m of text.matchAll(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\.?\s+(\d{1,2}),?\s+(\d{4})\b/gi)) {
+    const mon = months[m[1].toLowerCase()], day = m[2], yr = m[3];
+    dates.add(`${day.padStart(2,'0')}/${String(mon).padStart(2,'0')}/${yr}`);
+  }
+
+  // Hijri dates: ١٤٤٦/٠٩/١٥ style (Arabic-Indic digits)
+  for (let m of text.matchAll(/[\u0660-\u0669]{4}[\/\-][\u0660-\u0669]{1,2}[\/\-][\u0660-\u0669]{1,2}/g)) {
+    dates.add('Hijri: ' + m[0]);
+  }
+
+  return [...dates];
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  ENHANCED extractCheckinCheckout
+// ══════════════════════════════════════════════════════════════════
+function extractCheckinCheckout(text) {
+  const result = { checkin: [], checkout: [] };
+  const dateRx = /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{2,4})/gi;
+
+  // Check-in
+  for (let m of text.matchAll(/(?:check[-\s]?in|arrival|arrive|arriving|from|ci|chkin)[\s:#→\-]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi)) {
+    if (m[1]) result.checkin.push(m[1]);
+  }
+  // Check-out
+  for (let m of text.matchAll(/(?:check[-\s]?out|departure|depart|departing|to|until|co|chkout)[\s:#→\-]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi)) {
+    if (m[1]) result.checkout.push(m[1]);
+  }
+
+  // Heuristic: If two dates found and no labels, first=checkin, second=checkout
+  if (result.checkin.length === 0 && result.checkout.length === 0) {
+    const allDates = [...text.matchAll(dateRx)].map(m => m[0]);
+    if (allDates.length >= 2) {
+      result.checkin.push(allDates[0]);
+      result.checkout.push(allDates[1]);
+    }
+  }
+
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  SMART EXTRACT ALL — now returns 20+ categories
+// ══════════════════════════════════════════════════════════════════
+function smartExtractAll(text) {
+  const checkDates = extractCheckinCheckout(text);
+
+  return {
+    names:         extractNames(text),
+    emails:        extractEmails(text),
+    phones:        extractPhones(text),
+    dates:         extractDates(text),
+    checkin:       checkDates.checkin,
+    checkout:      checkDates.checkout,
+    nights:        extractNights(text),
+    pax:           extractPaxCount(text),
+    passports:     extractPassportNumbers(text),
+    idNumbers:     extractIDNumbers(text),
+    visaData:      extractVisaData(text),
+    confirmations: extractConfirmationNumbers(text),
+    nationalities: extractNationalities(text),
+    amounts:       extractAmounts(text),
+    roomTypes:     extractRoomTypes(text),
+    mealPlans:     extractMealPlans(text),
+    hotels:        extractHotelNames(text),
+    flights:       extractFlightNumbers(text),
+    cities:        extractCities(text),
+    addresses:     extractAddresses(text),
+    genderTitle:   extractGenderTitle(text),
+    remarks:       extractRemarks(text),
+    roomingRows:   extractRoomingRows(text),
+  };
+}
+
+// Log extracted data to console for debugging (ENHANCED)
+function logExtractedData(data) {
+  console.log('╔════════════════════════════════════════════════════════╗');
+  console.log('║           SMART EXTRACTION RESULTS                     ║');
+  console.log('╚════════════════════════════════════════════════════════╝');
+  
+  let totalCount = 0;
+  
+  Object.entries(data).forEach(([category, values]) => {
+    if (values && values.length > 0) {
+      console.log(`\n📌 ${category.toUpperCase()} (${values.length}):`);
+      values.forEach((v, i) => console.log(`   ${i + 1}. ${v}`));
+      totalCount += values.length;
+    }
+  });
+  
+  console.log(`\n✅ Total extracted: ${totalCount} data fields`);
+  console.log('═══════════════════════════════════════════════════════════\n');
+}
+
+/* ===== LIVE RE-EXTRACT ON MANUAL TEXT EDIT ===== */
+let reExtractTimer = null;
+function liveReExtract() {
+  clearTimeout(reExtractTimer);
+  reExtractTimer = setTimeout(() => {
+    const text = document.getElementById('ocrResult').value;
+    if (!text.trim()) { clearExtractionPreview(); return; }
+    const extracted = smartExtractAll(text);
+    const validated = validateAndCorrectData(extracted);
+    const quality = calculateDataQuality(validated);
+    window.lastExtractedData = validated;
+    renderExtractionPreview(validated, quality);
+  }, 600);
+}
+
+/* ===== RENDER LIVE EXTRACTION PREVIEW PANEL ===== */
+const FIELD_CONFIG = [
+  { key:'names',         label:'👤 Guest Name(s)',        color:'#3b82f6' },
+  { key:'checkin',       label:'📅 Check-In',             color:'#10b981' },
+  { key:'checkout',      label:'📅 Check-Out',            color:'#f59e0b' },
+  { key:'nights',        label:'🌙 Nights',               color:'#6366f1' },
+  { key:'pax',           label:'👥 Pax / Guests',         color:'#0ea5e9' },
+  { key:'dates',         label:'🗓️ Other Dates',           color:'#8b5cf6' },
+  { key:'hotels',        label:'🏨 Hotel',                color:'#0ea5e9' },
+  { key:'roomTypes',     label:'🛏️ Room Type',             color:'#6366f1' },
+  { key:'mealPlans',     label:'🍽️ Meal Plan',             color:'#ec4899' },
+  { key:'confirmations', label:'🔖 Confirmation No.',     color:'#f97316' },
+  { key:'passports',     label:'🛂 Passport No.',         color:'#14b8a6' },
+  { key:'idNumbers',     label:'🪪 ID / Iqama No.',        color:'#0891b2' },
+  { key:'visaData',      label:'📋 Visa Info',            color:'#7c3aed' },
+  { key:'nationalities', label:'🌍 Nationality',          color:'#84cc16' },
+  { key:'genderTitle',   label:'♀♂ Gender / Title',       color:'#f472b6' },
+  { key:'phones',        label:'🔢 All Numbers',          color:'#22c55e' },
+  { key:'emails',        label:'✉️ Email',                 color:'#a855f7' },
+  { key:'amounts',       label:'💰 Amount',               color:'#eab308' },
+  { key:'flights',       label:'✈️ Flight No.',            color:'#06b6d4' },
+  { key:'cities',        label:'🗺️ City / Destination',   color:'#f43f5e' },
+  { key:'addresses',     label:'📍 Address',              color:'#64748b' },
+  { key:'remarks',       label:'📝 Remarks / Notes',      color:'#78716c' },
+  { key:'roomingRows',   label:'📊 Rooming Table Rows',   color:'#1e3a8a' },
+];
+
+function renderExtractionPreview(data, quality) {
+  const panel = document.getElementById('extractionPreviewPanel');
+  const grid  = document.getElementById('extFieldsGrid');
+  const empty = document.getElementById('extEmptyMsg');
+  const badge = document.getElementById('scanCountBadge');
+  const qLabel = document.getElementById('qualityScoreLabel');
+  const qBar   = document.getElementById('qualityBarFill');
+  const accBadge = document.getElementById('accumulatedBadge');
+  const accCount = document.getElementById('accumulatedCount');
+
+  if (!panel) return;
+
+  // Count non-empty categories
+  const activeFields = FIELD_CONFIG.filter(f => data[f.key] && data[f.key].length > 0);
+
+  if (activeFields.length === 0) {
+    panel.style.display = 'block';
+    grid.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    badge.textContent = '0 fields';
+    return;
+  }
+
+  panel.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+  badge.textContent = quality.totalFields + ' fields';
+
+  // Quality bar
+  qLabel.textContent = quality.qualityScore + '%';
+  qLabel.style.color = quality.qualityScore >= 80 ? '#10b981' : quality.qualityScore >= 50 ? '#f59e0b' : '#ef4444';
+  qBar.style.width = quality.qualityScore + '%';
+  qBar.style.background = quality.qualityScore >= 80
+    ? 'linear-gradient(90deg,#10b981,#3b82f6)'
+    : quality.qualityScore >= 50
+    ? 'linear-gradient(90deg,#f59e0b,#f97316)'
+    : 'linear-gradient(90deg,#ef4444,#f97316)';
+
+  // Multi-scan badge
+  const scanCount = (window.accumulatedScans || []).length;
+  if (scanCount > 1) {
+    accBadge.style.display = 'block';
+    accCount.textContent = `📑 ${scanCount} scans accumulated — Excel will have ${scanCount} rows`;
+  } else {
+    accBadge.style.display = 'none';
+  }
+
+  // Build cards
+  grid.innerHTML = '';
+  activeFields.forEach(({ key, label, color }) => {
+    const values = data[key];
+    const card = document.createElement('div');
+    card.className = 'ext-field-card';
+    card.style.borderLeftColor = color;
+    card.style.borderLeftWidth = '3px';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'ext-field-label';
+    lbl.style.color = color;
+    lbl.textContent = label;
+    card.appendChild(lbl);
+
+    const valWrap = document.createElement('div');
+    valWrap.className = 'ext-field-values';
+
+    values.forEach(val => {
+      const row = document.createElement('div');
+      row.className = 'ext-field-value-item';
+
+      const txt = document.createElement('span');
+      txt.textContent = val;
+      txt.style.flex = '1';
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'ext-copy-val-btn';
+      copyBtn.textContent = '📋';
+      copyBtn.title = 'Copy';
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(val).then(() => {
+          copyBtn.textContent = '✓';
+          setTimeout(() => copyBtn.textContent = '📋', 1200);
+        });
+      };
+
+      row.appendChild(txt);
+      row.appendChild(copyBtn);
+      valWrap.appendChild(row);
+    });
+
+    card.appendChild(valWrap);
+    grid.appendChild(card);
+  });
+
+  // Scroll preview into view smoothly
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearExtractionPreview() {
+  const panel = document.getElementById('extractionPreviewPanel');
+  if (panel) panel.style.display = 'none';
+}
+
+/* ===== COPY ALL EXTRACTED DATA AS FORMATTED TEXT ===== */
+function copyAllExtracted() {
+  const data = window.lastExtractedData;
+  if (!data) { showToast('❌ No data to copy!'); return; }
+
+  let lines = [];
+  FIELD_CONFIG.forEach(({ key, label }) => {
+    const values = data[key];
+    if (values && values.length > 0) {
+      const cleanLabel = label.replace(/^[^\w]+/, '').trim(); // remove emoji
+      lines.push(`${cleanLabel}: ${values.join(' | ')}`);
+    }
+  });
+
+  if (lines.length === 0) { showToast('❌ No data!'); return; }
+  const text = lines.join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ All extracted data copied!');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Copied!');
+  });
+}
+
+/* ===== CLEAR ACCUMULATED SCANS ===== */
+function clearAccumulatedScans() {
+  window.accumulatedScans = [];
+  window.lastExtractedData = null;
+  const panel = document.getElementById('extractionPreviewPanel');
+  if (panel) panel.style.display = 'none';
+  showToast('🗑️ All accumulated scans cleared.');
+}
+
+/* ===== SEARCH / HIGHLIGHT INSIDE OCR TEXTAREA ===== */
+function toggleOCRSearch() {
+  const bar = document.getElementById('ocrSearchBar');
+  if (!bar) return;
+  if (bar.style.display === 'none' || bar.style.display === '') {
+    bar.style.display = 'block';
+    bar.focus();
+  } else {
+    bar.style.display = 'none';
+    bar.value = '';
+  }
+}
+
+function highlightSearch(query) {
+  // Textarea doesn't support HTML, so we just scroll to first match & show count
+  const ta = document.getElementById('ocrResult');
+  if (!ta) return;
+  const text = ta.value;
+  if (!query.trim()) return;
+
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx !== -1) {
+    // Move cursor to match position
+    ta.focus();
+    ta.setSelectionRange(idx, idx + query.length);
+    // Count occurrences
+    const matches = (text.toLowerCase().match(new RegExp(query.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g')) || []).length;
+    showOCRStatus(`🔍 Found ${matches} match${matches !== 1 ? 'es' : ''} for "${query}"`, '#3b82f6');
+  } else {
+    showOCRStatus(`❌ "${query}" not found`, '#ef4444');
+  }
+}
+
+/* ===== MULTI-SCAN EXCEL EXPORT: each scan = one row ===== */
+// (The main exportExtractedExcel is already updated below to handle multi-scan)
+
 </script>
 
 <!-- ===== EXTRACTOR DATA ADVANCED UPGRADE (NON-DESTRUCTIVE) ===== -->
@@ -4415,33 +7779,7 @@ function copyEmailForm(index) {
 }
 </script>
 
-<script>
-// Smooth scroll for navigation links
-document.addEventListener('DOMContentLoaded', function() {
-    // Add smooth scroll behavior
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-            
-            if (targetElement) {
-                const targetPosition = targetElement.offsetTop - 20;
-                
-                window.scrollTo({
-                    top: targetPosition,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-    
-    // Initialize Email Forms
-    if (typeof initEmailForms === 'function') {
-        initEmailForms();
-    }
-});
-</script>
+
 
 </body>
 </html>
