@@ -2381,10 +2381,9 @@ document.addEventListener("DOMContentLoaded",()=>{
       <input type="checkbox" id="optOverlay" style="accent-color:#3b82f6;"> 🗺️ Show Word Overlay
     </label>
     <select id="ocrLanguage" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;color:#334155;">
-      <option value="ara,eng" selected>Arabic + English</option>
+      <option value="auto" selected>🔍 Auto Detect (Default)</option>
       <option value="eng">English Only</option>
       <option value="ara">Arabic Only</option>
-      <option value="auto">Auto Detect</option>
       <option value="tur">Turkish</option>
       <option value="fra">French</option>
       <option value="deu">German</option>
@@ -7700,12 +7699,16 @@ async function ocrSpaceRequest(file, engine) {
   const API_KEY = 'K87690877788957';
   const URL     = 'https://api.ocr.space/parse/image';
   
-  let lang       = document.getElementById('ocrLanguage')?.value || 'ara';
-  // OCR.space only accepts one language per request
-  if (lang === 'ara,eng') lang = 'ara';
-  // Engine 2 & 3 on free key only support English
+  let lang       = document.getElementById('ocrLanguage')?.value || 'auto';
   const engineNum = Number(engine);
-  const apiLang = (engineNum === 2 || engineNum === 3) ? 'eng' : (lang === 'auto' ? 'eng' : lang);
+  // Engine 3 & 2 only support English on free key; Engine 1 supports Arabic & others
+  // For auto-detect: try 'ara' on Engine 1 (best for Arabic docs), 'eng' on 2 & 3
+  let apiLang;
+  if (lang === 'auto') {
+    apiLang = (engineNum === 1) ? 'ara' : 'eng';
+  } else {
+    apiLang = (engineNum === 2 || engineNum === 3) ? 'eng' : lang;
+  }
 
   const rotate   = document.getElementById('optAutoRotate')?.checked ?? true;
   const enlarge  = document.getElementById('optAutoEnlarge')?.checked ?? true;
@@ -7715,7 +7718,7 @@ async function ocrSpaceRequest(file, engine) {
   const fd = new FormData();
   fd.append('file', file);
   fd.append('apikey', API_KEY);
-  fd.append('language', apiLang);
+  fd.append('language', apiLang);  // empty string = OCR.space auto-detect
   fd.append('OCREngine', String(engine));
   fd.append('isOverlayRequired', overlay ? 'true' : 'false');
   fd.append('detectOrientation', rotate ? 'true' : 'false');
@@ -7806,8 +7809,10 @@ async function runOCRSpaceOnFile(file, _ignored, fileIndex, fileCount) {
   const base  = Math.round((fileIndex / fileCount) * 68);
   const range = Math.round(68 / fileCount);
 
-  const selectedLang = document.getElementById('ocrLanguage')?.value || 'ara';
-  const engineOrder = (selectedLang === 'eng') ? [3, 2, 1] : [1, 2, 3];
+  const selectedLang = document.getElementById('ocrLanguage')?.value || 'auto';
+  // Engine 1 supports Arabic + most languages on free key → always try first
+  // Engine 3 = best English quality, Engine 2 = fast English → fallback
+  const engineOrder = [1, 3, 2];
 
   for (const engine of engineOrder) {
     updateEngineStatusBadge(engine, 'trying');
@@ -7815,7 +7820,7 @@ async function runOCRSpaceOnFile(file, _ignored, fileIndex, fileCount) {
     try {
       const json = await ocrSpaceRequest(file, engine);
       const text = extractTextFromOCRSpace(json);
-      if (!text || text.trim().length < 8) throw new Error('Empty result');
+      if (!text || text.trim().length < 2) throw new Error('Empty result');
 
       window._ocrEngine = engine;
       updateEngineStatusBadge(engine, 'ok');
@@ -7832,7 +7837,7 @@ async function runOCRSpaceOnFile(file, _ignored, fileIndex, fileCount) {
     } catch (err) {
       console.warn(`Engine ${engine} failed:`, err.message);
       updateEngineStatusBadge(engine, 'failed');
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 1200)); // wait longer before next engine
     }
   }
 
