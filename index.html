@@ -7697,10 +7697,16 @@ function setOCRMode(mode) {
 
 // ── OCR.SPACE API CALL ────────────────────────────────────────────────────
 async function ocrSpaceRequest(file, engine) {
-  const API_KEY = 'helloworld'; // Free tier — replace with paid key for higher limits
+  const API_KEY = 'K87690877788957';
   const URL     = 'https://api.ocr.space/parse/image';
   
-  const lang     = document.getElementById('ocrLanguage')?.value || 'ara,eng';
+  let lang       = document.getElementById('ocrLanguage')?.value || 'ara';
+  // OCR.space only accepts one language per request
+  if (lang === 'ara,eng') lang = 'ara';
+  // Engine 2 & 3 on free key only support English
+  const engineNum = Number(engine);
+  const apiLang = (engineNum === 2 || engineNum === 3) ? 'eng' : (lang === 'auto' ? 'eng' : lang);
+
   const rotate   = document.getElementById('optAutoRotate')?.checked ?? true;
   const enlarge  = document.getElementById('optAutoEnlarge')?.checked ?? true;
   const table    = document.getElementById('optTableDetect')?.checked ?? false;
@@ -7709,7 +7715,7 @@ async function ocrSpaceRequest(file, engine) {
   const fd = new FormData();
   fd.append('file', file);
   fd.append('apikey', API_KEY);
-  fd.append('language', lang === 'auto' ? '' : lang);
+  fd.append('language', apiLang);
   fd.append('OCREngine', String(engine));
   fd.append('isOverlayRequired', overlay ? 'true' : 'false');
   fd.append('detectOrientation', rotate ? 'true' : 'false');
@@ -7800,7 +7806,10 @@ async function runOCRSpaceOnFile(file, _ignored, fileIndex, fileCount) {
   const base  = Math.round((fileIndex / fileCount) * 68);
   const range = Math.round(68 / fileCount);
 
-  for (const engine of [3, 2, 1]) {
+  const selectedLang = document.getElementById('ocrLanguage')?.value || 'ara';
+  const engineOrder = (selectedLang === 'eng') ? [3, 2, 1] : [1, 2, 3];
+
+  for (const engine of engineOrder) {
     updateEngineStatusBadge(engine, 'trying');
     setProgress(base + 5, `📡 Trying Engine ${engine}…`);
     try {
