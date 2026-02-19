@@ -1173,6 +1173,10 @@ document.addEventListener('DOMContentLoaded', function() {
             padding: 30px;
             margin-top: 20px;
             text-align: center;
+            transition: background 0.3s ease;
+        }
+        .business-result.loss {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
         }
         
         .business-display {
@@ -1311,6 +1315,154 @@ document.addEventListener('DOMContentLoaded', function() {
             font-size: 0.75rem;
             color: #64748b;
         }
+        /* Add Room Type Button & Modal */
+        .add-room-type-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 2px dashed #6366f1;
+            background: transparent;
+            color: #6366f1;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 80px;
+            white-space: nowrap;
+        }
+        .add-room-type-btn:hover {
+            background: #eef2ff;
+            border-style: solid;
+            transform: scale(1.04);
+        }
+        .room-type-box.custom-type {
+            border-color: #a78bfa;
+            background: #f5f3ff;
+        }
+        .room-type-box.custom-type .room-type-label { color: #5b21b6; }
+        .room-type-box.custom-type.checked { background: #ede9fe; border-color: #7c3aed; }
+        .remove-room-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #ef4444;
+            color: #fff;
+            font-size: 0.65rem;
+            font-weight: 900;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            z-index: 10;
+            transition: transform 0.15s;
+        }
+        .remove-room-btn:hover { transform: scale(1.2); }
+
+        /* Add Room Type Modal */
+        #addRoomTypeModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        #addRoomTypeModal.open { display: flex; }
+        .add-room-modal-box {
+            background: #fff;
+            border-radius: 18px;
+            padding: 28px 24px 20px;
+            width: 340px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            position: relative;
+            animation: modalPop 0.2s ease;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .add-room-modal-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #1e3a8a;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .add-room-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .preset-chip {
+            padding: 7px 14px;
+            border-radius: 20px;
+            border: 2px solid #c7d2fe;
+            background: #f8faff;
+            color: #1e3a8a;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .preset-chip:hover { background: #e0e7ff; border-color: #6366f1; color: #4f46e5; }
+        .preset-chip.selected { background: #6366f1; border-color: #6366f1; color: #fff; }
+        .add-room-custom-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            align-items: center;
+        }
+        .add-room-custom-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid #c7d2fe;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            outline: none;
+        }
+        .add-room-custom-row input:focus { border-color: #6366f1; }
+        .add-room-modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-btn-add {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg,#6366f1,#4f46e5);
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .modal-btn-add:hover { opacity: 0.88; }
+        .modal-btn-cancel {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            color: #64748b;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .modal-btn-cancel:hover { background: #f1f5f9; }
+
         .priority-badge {
             position: absolute;
             top: -8px;
@@ -1368,6 +1520,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .layout-result-pax {
             opacity: 0.8;
             font-size: 0.82rem;
+        }
+        .layout-result-row input[type=number]::-webkit-outer-spin-button,
+        .layout-result-row input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .layout-result-row input[type=number] {
+            -moz-appearance: textfield;
         }
         .layout-drag-hint {
             font-size: 0.75rem;
@@ -3055,15 +3215,15 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <div class="housing-ratio-grid">
                     <div class="input-group">
                         <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 0.95rem;">TOTAL ROOMS - إجمالي الغرف</h4>
-                        <input type="number" id="hrTotalRooms" placeholder="Enter total rooms" oninput="clearHrPax(); calculateHousingRatio(); calculateRoomLayout();">
+                        <input type="number" id="hrTotalRooms" placeholder="Enter total rooms" oninput="calculateHousingRatioSmart(); calculateRoomLayout();">
                     </div>
                     <div class="input-group">
                         <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 0.95rem;">TOTAL PAX - إجمالي الأشخاص</h4>
-                        <input type="number" id="hrTotalPax" placeholder="Enter total pax" oninput="clearHrRooms(); calculateHousingRatio(); calculateRoomLayout();">
+                        <input type="number" id="hrTotalPax" placeholder="Enter total pax" oninput="calculateHousingRatioSmart(); calculateRoomLayout();">
                     </div>
                     <div class="input-group">
                         <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 0.95rem;">RATIO - النسبة</h4>
-                        <input type="number" id="hrRatio" placeholder="e.g. 2 or 3" oninput="calculateHousingRatio(); calculateRoomLayout();">
+                        <input type="number" id="hrRatio" placeholder="e.g. 2 or 3" oninput="calculateHousingRatioSmart(); calculateRoomLayout();">
                     </div>
                 </div>
                 <!-- Room Layout Section -->
@@ -3103,19 +3263,32 @@ document.addEventListener("DOMContentLoaded",()=>{
                             </div>
                         </div>
                     </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                        <button class="add-room-type-btn" onclick="openAddRoomTypeModal()">
+                            ➕ Add Type
+                        </button>
+                        <span style="font-size:0.75rem; color:#94a3b8;">Add SGL, 6-pax, custom...</span>
+                    </div>
                     <div class="layout-drag-hint">☝️ Drag to reorder priority &nbsp;|&nbsp; First = highest priority</div>
                     <div class="layout-result-section" id="layoutResult">
-                        <div class="layout-result-title">🏆 Best Room Layout - أفضل توزيع للغرف</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                            <div class="layout-result-title" style="margin:0;">🏆 Best Room Layout - أفضل توزيع للغرف</div>
+                            <button id="nextLayoutBtn" onclick="showNextLayout()" style="display:none; background:linear-gradient(135deg,#6366f1,#4f46e5); color:#fff; border:none; padding:7px 16px; border-radius:10px; font-size:0.82rem; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(99,102,241,0.35); transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🔄 Next Layout - توزيع آخر</button>
+                        </div>
                         <div class="layout-result-rows" id="layoutResultRows"></div>
+                        <div id="layoutMessage" style="margin-top:10px; display:none;"></div>
                     </div>
                 </div>
 
                 <div class="business-result" id="hrResult">
                     <div class="business-display" style="flex-direction: column; align-items: flex-start; gap: 6px;">
                         <span class="business-label" id="hrResultLabel">RESULT:</span>
-                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                            <span class="business-value positive" id="hrResultValue">0</span>
-                            <span id="hrBedIcons" style="font-size: 1.8rem; letter-spacing: 4px;"></span>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width:100%; justify-content:space-between;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span class="business-value positive" id="hrResultValue">0</span>
+                                <span id="hrBedIcons" style="font-size: 1.8rem; letter-spacing: 4px;"></span>
+                            </div>
+                            <button onclick="clearHousingRatio()" style="background:linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border:none; padding:8px 20px; border-radius:10px; font-size:0.85rem; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 2px 8px rgba(239,68,68,0.4); transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🗑️ Clear - مسح</button>
                         </div>
                     </div>
                 </div>
@@ -4566,23 +4739,8 @@ function swapLanguages() {
             }
         }
 
-        // Housing Ratio Calculator
-        // Smart clearing for Housing Ratio inputs
-        function clearHrPax() {
-            const roomsInput = document.getElementById('hrTotalRooms');
-            if (roomsInput.value) {
-                document.getElementById('hrTotalPax').value = '';
-            }
-        }
-        
-        function clearHrRooms() {
-            const paxInput = document.getElementById('hrTotalPax');
-            if (paxInput.value) {
-                document.getElementById('hrTotalRooms').value = '';
-            }
-        }
-
-        function calculateHousingRatio() {
+        // Housing Ratio Calculator — smart unified version
+        function calculateHousingRatioSmart() {
             const totalRooms = parseFloat(document.getElementById('hrTotalRooms').value);
             const totalPax   = parseFloat(document.getElementById('hrTotalPax').value);
             const ratio      = parseFloat(document.getElementById('hrRatio').value);
@@ -4594,36 +4752,45 @@ function swapLanguages() {
             const hasRooms = !isNaN(totalRooms)  && totalRooms > 0;
             const hasRatio = !isNaN(ratio)        && ratio > 0;
 
-            function bedIcons(n) {
-                // Cap at 6 icons max for display sanity
-                const count = Math.min(n, 6);
-                return '🛏️'.repeat(count) + (n > 6 ? ` +${n-6}` : '');
-            }
+            // Store both for layout engine regardless of ratio
+            if (hasPax)   { window._hrComputedPax   = totalPax; }
+            if (hasRooms) { window._hrComputedRooms  = totalRooms; }
 
             if (hasPax && hasRatio) {
-                // TOTAL PAX ÷ RATIO → ROOM TYPE (round down)
                 const roomTotal = Math.floor(totalPax / ratio);
                 labelEl.textContent = 'TOTAL ROOM إجمالي الغرف';
                 valueEl.textContent = roomTotal;
-                iconsEl.textContent = '';  // No bed icons
+                iconsEl.textContent = '';
                 valueEl.classList.add('positive');
                 window._hrComputedRooms = roomTotal;
                 window._hrComputedPax   = totalPax;
             } else if (hasRooms && hasRatio) {
-                // TOTAL ROOMS × RATIO → PAX TOTAL (round down)
                 const paxTotal = Math.floor(totalRooms * ratio);
                 labelEl.textContent = 'PAX TOTAL - إجمالي الأشخاص:';
                 valueEl.textContent = paxTotal;
-                iconsEl.textContent = '';  // No bed icons
+                iconsEl.textContent = '';
                 valueEl.classList.add('positive');
-                window._hrComputedPax = paxTotal;
+                window._hrComputedPax   = paxTotal;
                 window._hrComputedRooms = totalRooms;
+            } else if (hasRooms && hasPax) {
+                // Both entered, show the ratio
+                const computedRatio = (totalPax / totalRooms).toFixed(2);
+                labelEl.textContent = 'RATIO (PAX/ROOM) النسبة:';
+                valueEl.textContent = computedRatio;
+                iconsEl.textContent = '';
+                valueEl.classList.add('positive');
             } else {
                 labelEl.textContent = 'RESULT:';
                 valueEl.textContent = '0';
                 iconsEl.textContent = '';
             }
         }
+
+        // Keep old name as alias for ratio input oninput
+        function calculateHousingRatio() { calculateHousingRatioSmart(); }
+        function clearHrPax() {}   // no-op, kept for any stale references
+        function clearHrRooms() {} // no-op
+
 
         // ===== Room Layout Logic =====
         (function initRoomLayoutDrag() {
@@ -4705,106 +4872,356 @@ function swapLanguages() {
             }
         })();
 
+        function clearHousingRatio() {
+            document.getElementById('hrTotalRooms').value = '';
+            document.getElementById('hrTotalPax').value = '';
+            document.getElementById('hrRatio').value = '';
+            document.getElementById('hrResultLabel').textContent = 'RESULT:';
+            document.getElementById('hrResultValue').textContent = '0';
+            document.getElementById('hrBedIcons').textContent = '';
+            window._hrComputedRooms = 0;
+            window._hrComputedPax = 0;
+            window._currentAllocation = null;
+            window._allLayouts = [];
+            const resultSection = document.getElementById('layoutResult');
+            if (resultSection) resultSection.style.display = 'none';
+            const msgEl = document.getElementById('layoutMessage');
+            if (msgEl) { msgEl.innerHTML = ''; msgEl.style.display = 'none'; }
+        }
+
+        // Store all valid alternative layouts
+        window._allLayouts = [];
+        window._layoutIndex = 0;
+
+        function showNextLayout() {
+            if (!window._allLayouts || window._allLayouts.length <= 1) return;
+            window._layoutIndex = (window._layoutIndex + 1) % window._allLayouts.length;
+            renderLayoutAlloc(window._allLayouts[window._layoutIndex]);
+            const btn = document.getElementById('nextLayoutBtn');
+            if (btn) btn.textContent = `🔄 Layout ${window._layoutIndex + 1}/${window._allLayouts.length} - توزيع آخر`;
+        }
+
+        /* ═══════════════════════════════════════════════════════
+           SMART ROOM LAYOUT ENGINE
+           ═══════════════════════════════════════════════════════ */
+
+        // Render the allocation rows with editable inputs + smart messages
+        function renderLayoutAlloc(allocation) {
+            const resultRows = document.getElementById('layoutResultRows');
+            const msgEl      = document.getElementById('layoutMessage');
+            const targetPax  = (parseInt(document.getElementById('hrTotalPax').value) || 0)
+                             || (window._hrComputedPax || 0);
+            const targetRooms = (parseInt(document.getElementById('hrTotalRooms').value) || 0)
+                             || (window._hrComputedRooms || 0);
+
+            const totalAllocPax   = allocation.reduce((s, a) => s + a.count * a.pax, 0);
+            const totalAllocRooms = allocation.reduce((s, a) => s + a.count, 0);
+            const paxDiff         = totalAllocPax - targetPax;
+
+            // Render rows
+            resultRows.innerHTML = allocation.map((a, i) => `
+                <div class="layout-result-row" id="layoutRow_${i}">
+                    <span class="layout-result-type">${a.type}</span>
+                    <input type="number"
+                        id="layoutOverride_${i}"
+                        value="${a.count}"
+                        min="0"
+                        oninput="applyLayoutOverride(${i})"
+                        style="width:62px; padding:4px 8px; border-radius:7px; border:2px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.18); color:#fff; font-size:1rem; font-weight:800; text-align:center; outline:none;"
+                        title="Edit rooms for ${a.type}"
+                    >
+                    <span class="layout-result-count">&nbsp;rooms</span>
+                    <span class="layout-result-pax" id="layoutPaxLabel_${i}">= ${a.count * a.pax} pax</span>
+                </div>
+            `).join('') + `
+                <div class="layout-result-row" style="background:rgba(255,255,255,0.22); margin-top:4px;">
+                    <span class="layout-result-type">TOTAL</span>
+                    <span class="layout-result-count" id="layoutTotalRooms">${totalAllocRooms} rooms</span>
+                    <span class="layout-result-pax" id="layoutTotalPax">= ${totalAllocPax} pax ${_paxBadge(paxDiff, targetPax)}</span>
+                </div>`;
+
+            // Smart status message
+            _updateLayoutMessage(paxDiff, totalAllocRooms, targetRooms, targetPax, allocation);
+
+            // Store live allocation
+            window._currentAllocation = allocation.map(a => ({...a}));
+        }
+
+        function _paxBadge(diff, target) {
+            if (diff === 0) return '✅';
+            const sign = diff > 0 ? '+' : '';
+            const color = Math.abs(diff) <= 2 ? '#fbbf24' : '#f87171';
+            return `<span style="color:${color}">(${sign}${diff} pax)</span>`;
+        }
+
+        function _updateLayoutMessage(paxDiff, allocRooms, targetRooms, targetPax, allocation) {
+            const msgEl = document.getElementById('layoutMessage');
+            if (!msgEl) return;
+            msgEl.innerHTML = '';
+            msgEl.style.display = 'none';
+
+            const msgs = [];
+
+            // Pax mismatch messages
+            if (paxDiff > 0) {
+                msgs.push({
+                    icon: '🛏️',
+                    color: '#fbbf24',
+                    text: `You have <strong>${paxDiff} additional bed${paxDiff>1?'s':''}</strong> (${paxDiff} extra PAX capacity). Consider adjusting room types or reducing a room.`
+                });
+            } else if (paxDiff < 0) {
+                const needed = Math.abs(paxDiff);
+                msgs.push({
+                    icon: '⚠️',
+                    color: '#f87171',
+                    text: `<strong>${needed} PAX unaccommodated!</strong> You need ${needed} more bed${needed>1?'s':''}. Add rooms or switch to a higher-capacity type.`
+                });
+            }
+
+            // Rooms mismatch (when both rooms & pax were specified)
+            if (targetRooms > 0 && allocRooms !== targetRooms) {
+                const roomDiff = allocRooms - targetRooms;
+                if (roomDiff > 0) {
+                    msgs.push({
+                        icon: '🏨',
+                        color: '#fbbf24',
+                        text: `Using <strong>${roomDiff} more room${roomDiff>1?'s':''}</strong> than your total rooms input (${targetRooms}). Check your distribution.`
+                    });
+                } else {
+                    const short = Math.abs(roomDiff);
+                    msgs.push({
+                        icon: '🏨',
+                        color: '#f87171',
+                        text: `<strong>${short} more room${short>1?'s':''} needed!</strong> Current rooms (${allocRooms}) are less than target (${targetRooms}). Add ${short} room${short>1?'s':''} to your layout.`
+                    });
+                }
+            }
+
+            // Exact match celebration
+            if (paxDiff === 0 && (targetRooms === 0 || allocRooms === targetRooms)) {
+                msgs.push({
+                    icon: '🎯',
+                    color: '#34d399',
+                    text: `<strong>Perfect match!</strong> All ${targetPax} PAX accommodated in ${allocRooms} rooms.`
+                });
+            }
+
+            if (msgs.length > 0) {
+                msgEl.style.display = 'block';
+                msgEl.innerHTML = msgs.map(m => `
+                    <div style="display:flex; align-items:flex-start; gap:8px; padding:8px 12px; background:rgba(0,0,0,0.18); border-left:3px solid ${m.color}; border-radius:6px; margin-bottom:6px; font-size:0.82rem; line-height:1.4; color:#fff;">
+                        <span style="font-size:1rem; flex-shrink:0;">${m.icon}</span>
+                        <span>${m.text}</span>
+                    </div>`).join('');
+            }
+        }
+
+        // When user manually edits a room count input
+        function applyLayoutOverride(changedIdx) {
+            if (!window._currentAllocation) return;
+            const alloc = window._currentAllocation;
+            const newCount = parseInt(document.getElementById('layoutOverride_' + changedIdx).value) || 0;
+
+            // Compute how many rooms are left for the OTHER types
+            const targetRooms = (parseInt(document.getElementById('hrTotalRooms').value) || 0)
+                              || (window._hrComputedRooms || 0);
+            const targetPax   = (parseInt(document.getElementById('hrTotalPax').value) || 0)
+                              || (window._hrComputedPax || 0);
+
+            // Update changed type
+            alloc[changedIdx].count = newCount;
+
+            // If we have a target room count, redistribute remaining rooms to OTHER types
+            // using the same priority-aware solver (higher index = lower priority)
+            if (targetRooms > 0) {
+                const usedRooms  = newCount;
+                const otherTypes = alloc.filter((_, i) => i !== changedIdx);
+                const remaining  = targetRooms - usedRooms;
+
+                if (remaining > 0 && otherTypes.length > 0) {
+                    // Redistribute remaining rooms to other types smartly
+                    // Try to match remaining pax as closely as possible
+                    const remainingPax = targetPax - newCount * alloc[changedIdx].pax;
+                    const redistributed = _smartDistribute(otherTypes, remaining, remainingPax);
+                    let ri = 0;
+                    alloc.forEach((a, i) => {
+                        if (i !== changedIdx) {
+                            a.count = redistributed[ri] || 0;
+                            ri++;
+                        }
+                    });
+                } else if (remaining <= 0) {
+                    // No rooms left — set all others to 0
+                    alloc.forEach((a, i) => { if (i !== changedIdx) a.count = 0; });
+                }
+            }
+
+            // Update all input fields and pax labels
+            alloc.forEach((a, i) => {
+                const inp = document.getElementById('layoutOverride_' + i);
+                if (inp && i !== changedIdx) inp.value = a.count;
+                const lbl = document.getElementById('layoutPaxLabel_' + i);
+                if (lbl) lbl.textContent = '= ' + (a.count * a.pax) + ' pax';
+            });
+
+            // Update totals
+            const totalAllocPax   = alloc.reduce((s, a) => s + a.count * a.pax, 0);
+            const totalAllocRooms = alloc.reduce((s, a) => s + a.count, 0);
+            const paxDiff         = totalAllocPax - targetPax;
+
+            document.getElementById('layoutTotalRooms').textContent = totalAllocRooms + ' rooms';
+            document.getElementById('layoutTotalPax').innerHTML =
+                '= ' + totalAllocPax + ' pax ' + _paxBadge(paxDiff, targetPax);
+
+            // Update smart messages
+            _updateLayoutMessage(paxDiff, totalAllocRooms, targetRooms, targetPax, alloc);
+        }
+
+        // Distribute `rooms` among `types` to best match `targetPax`, no priority constraint
+        function _smartDistribute(types, rooms, targetPax) {
+            if (types.length === 0) return [];
+            if (types.length === 1) return [rooms];
+
+            const n = types.length;
+            const allocs = [];
+            const seen = new Set();
+
+            function solve(idx, rem, current) {
+                if (idx === n - 1) {
+                    const cnt = rem;
+                    if (cnt >= 0) {
+                        const key = [...current, cnt].join(',');
+                        if (!seen.has(key)) { seen.add(key); allocs.push([...current, cnt]); }
+                    }
+                    return;
+                }
+                const maxC = rem;
+                for (let c = maxC; c >= 0; c--) {
+                    solve(idx + 1, rem - c, [...current, c]);
+                    if (allocs.length > 500) return; // cap
+                }
+            }
+            solve(0, rooms, []);
+
+            if (allocs.length === 0) {
+                // fallback: split evenly
+                const base = Math.floor(rooms / n);
+                const extra = rooms % n;
+                return types.map((_, i) => base + (i < extra ? 1 : 0));
+            }
+
+            // Pick the one closest to targetPax
+            allocs.sort((a, b) => {
+                const pA = a.reduce((s, c, i) => s + c * types[i].pax, 0);
+                const pB = b.reduce((s, c, i) => s + c * types[i].pax, 0);
+                return Math.abs(pA - targetPax) - Math.abs(pB - targetPax);
+            });
+            return allocs[0];
+        }
+
         function calculateRoomLayout() {
             const inputRooms = parseInt(document.getElementById('hrTotalRooms').value) || 0;
             const inputPax   = parseInt(document.getElementById('hrTotalPax').value) || 0;
-            // If pax was computed from rooms×ratio, use that; otherwise use direct input
-            const totalRooms = inputRooms || (window._hrComputedRooms || 0);
-            const totalPax   = inputPax   || (window._hrComputedPax   || 0);
+            let totalRooms   = inputRooms || (window._hrComputedRooms || 0);
+            let totalPax     = inputPax   || (window._hrComputedPax   || 0);
 
-            // Collect checked types in current drag order
             const boxes = Array.from(document.querySelectorAll('#roomLayoutBoxes .room-type-box'));
             const selected = boxes
                 .filter(b => b.querySelector('.room-type-checkbox').checked)
                 .map(b => ({ type: b.dataset.type, pax: parseInt(b.dataset.pax) }));
 
             const resultSection = document.getElementById('layoutResult');
-            const resultRows = document.getElementById('layoutResultRows');
+            const nextBtn       = document.getElementById('nextLayoutBtn');
+
+            // Case: only PAX entered (no rooms, no ratio) → estimate rooms from types
+            if (totalPax > 0 && totalRooms === 0 && selected.length > 0) {
+                const avgPax = selected.reduce((s, t) => s + t.pax, 0) / selected.length;
+                totalRooms = Math.round(totalPax / avgPax);
+                window._hrComputedRooms = totalRooms;
+            }
 
             if (selected.length === 0 || totalRooms === 0 || totalPax === 0) {
                 if (resultSection) resultSection.style.display = 'none';
                 return;
             }
 
-            // Rules:
-            // 1. Every checked type gets at least 1 room
-            // 2. Priority order is STRICT: type[0] >= type[1] >= type[2] >= type[3] in room count
-            // 3. Among valid allocations, pick the one closest to totalPax
-            let rooms = totalRooms;
-            let pax = totalPax;
-            let allocation = selected.map(t => ({ ...t, count: 0 }));
+            const rooms = totalRooms;
+            const pax   = totalPax;
+
+            // Minimum rooms needed to accommodate all pax
+            const maxPaxPerRoom = Math.max(...selected.map(t => t.pax));
+            const minRoomsNeeded = Math.ceil(pax / maxPaxPerRoom);
+
+            // Check if rooms are enough at all
+            const msgEl = document.getElementById('layoutMessage');
+
+            if (rooms < selected.length) {
+                // Not even 1 room per type
+                if (resultSection) resultSection.style.display = 'none';
+                return;
+            }
+
+            // Collect ALL valid allocations (priority order: count[i] >= count[i+1])
+            const allValidAllocs = [];
 
             if (selected.length === 1) {
-                allocation[0].count = rooms;
+                allValidAllocs.push([rooms]);
             } else {
                 const n = selected.length;
-
-                // Each type gets minimum 1 room, and count[i] >= count[i+1]
-                // To enforce priority: distribute so that count is non-increasing by index
-                // We brute-force but only accept solutions where count[i] >= count[i+1]
-                // and every count[i] >= 1
-
-                let bestAlloc = null;
-                let bestScore = Infinity;
-
-                function solve(idx, remRooms, remPax, current) {
+                const seen = new Set();
+                function solve(idx, remRooms, current) {
                     if (idx === n - 1) {
-                        // Last type gets all remaining rooms
                         const cnt = remRooms;
-                        // Must be >= 1 and <= previous count (priority rule)
                         const prevCount = current.length > 0 ? current[current.length - 1] : rooms;
                         if (cnt >= 1 && cnt <= prevCount) {
-                            const leftover = Math.abs(remPax - cnt * selected[idx].pax);
-                            if (leftover < bestScore) {
-                                bestScore = leftover;
-                                bestAlloc = [...current, cnt];
-                            }
+                            const key = [...current, cnt].join(',');
+                            if (!seen.has(key)) { seen.add(key); allValidAllocs.push([...current, cnt]); }
                         }
                         return;
                     }
                     const prevCount = current.length > 0 ? current[current.length - 1] : rooms;
-                    // This type can have between 1 and prevCount rooms
-                    // But must leave at least (n - idx - 1) rooms for remaining types (1 each min)
                     const remaining_types = n - idx - 1;
                     const maxC = Math.min(prevCount, remRooms - remaining_types);
-                    const minC = 1;
-                    for (let c = maxC; c >= minC; c--) {
-                        solve(idx + 1, remRooms - c, remPax - c * selected[idx].pax, [...current, c]);
-                        if (bestScore === 0) return;
+                    for (let c = maxC; c >= 1; c--) {
+                        solve(idx + 1, remRooms - c, [...current, c]);
+                        if (allValidAllocs.length > 2000) return;
                     }
                 }
+                solve(0, rooms, []);
 
-                solve(0, rooms, pax, []);
+                allValidAllocs.sort((a, b) => {
+                    const paxA = a.reduce((s, c, i) => s + c * selected[i].pax, 0);
+                    const paxB = b.reduce((s, c, i) => s + c * selected[i].pax, 0);
+                    const diffA = Math.abs(paxA - pax);
+                    const diffB = Math.abs(paxB - pax);
+                    if (diffA !== diffB) return diffA - diffB;
+                    return (Math.max(...a) - Math.min(...a)) - (Math.max(...b) - Math.min(...b));
+                });
+            }
 
-                if (bestAlloc) {
-                    allocation.forEach((a, i) => { a.count = bestAlloc[i]; });
+            const layoutObjects = allValidAllocs.map(counts =>
+                selected.map((t, i) => ({ ...t, count: counts[i] }))
+            );
+
+            if (layoutObjects.length === 0) {
+                const base = Math.floor(rooms / selected.length);
+                const extra = rooms - base * selected.length;
+                layoutObjects.push(selected.map((t, i) => ({ ...t, count: base + (i < extra ? 1 : 0) })));
+            }
+
+            window._allLayouts   = layoutObjects;
+            window._layoutIndex  = 0;
+
+            if (nextBtn) {
+                if (layoutObjects.length > 1) {
+                    nextBtn.style.display = 'flex';
+                    nextBtn.textContent = `🔄 Layout 1/${layoutObjects.length} - توزيع آخر`;
                 } else {
-                    // Fallback: distribute evenly in descending order
-                    const base = Math.floor(rooms / n);
-                    let extra = rooms - base * n;
-                    allocation.forEach((a, i) => { a.count = base + (i < extra ? 1 : 0); });
+                    nextBtn.style.display = 'none';
                 }
             }
 
-            // Compute totals
-            const totalAllocPax = allocation.reduce((s, a) => s + a.count * a.pax, 0);
-            const totalAllocRooms = allocation.reduce((s, a) => s + a.count, 0);
-
-            // Render
-            const icons = { DBL: '🛏️🛏️', TRPL: '🛏️🛏️🛏️', QUAD: '🛏️🛏️🛏️🛏️', QUINT: '🛛️🛏️🛏️🛏️🛏️' };
-            resultRows.innerHTML = allocation.map((a, i) => `
-                <div class="layout-result-row">
-                    <span class="layout-result-type">${a.type}</span>
-                    <span class="layout-result-count">${a.count} rooms</span>
-                    <span class="layout-result-pax">= ${a.count * a.pax} pax</span>
-                </div>
-            `).join('') + `
-                <div class="layout-result-row" style="background:rgba(255,255,255,0.22); margin-top:4px;">
-                    <span class="layout-result-type">TOTAL</span>
-                    <span class="layout-result-count">${totalAllocRooms} rooms</span>
-                    <span class="layout-result-pax">= ${totalAllocPax} pax ${totalAllocPax !== pax ? '<span style="color:#fbbf24">(Δ'+(totalAllocPax-pax)+')</span>' : '✅'}</span>
-                </div>`;
-
+            renderLayoutAlloc(layoutObjects[0]);
             resultSection.style.display = 'block';
         }
         // ===== END Room Layout Logic =====
@@ -4815,16 +5232,18 @@ function swapLanguages() {
             
             const profit = sell - cost;
             const profitElement = document.getElementById('businessProfit');
+            const resultBox = document.getElementById('businessResult');
             
             profitElement.textContent = profit.toFixed(2);
             
-            // Add visual feedback for profit/loss
             if (profit < 0) {
                 profitElement.classList.add('negative');
                 profitElement.classList.remove('positive');
+                resultBox.classList.add('loss');
             } else {
                 profitElement.classList.add('positive');
                 profitElement.classList.remove('negative');
+                resultBox.classList.remove('loss');
             }
         }
         
@@ -8785,6 +9204,193 @@ document.addEventListener('DOMContentLoaded', function() {
   if (ap) ap.style.display = 'none';
 });
 
+// ===== ADD ROOM TYPE LOGIC =====
+let _selectedPresetName = null;
+let _selectedPresetPax  = null;
+
+function openAddRoomTypeModal() {
+    // Reset state
+    document.getElementById('customRoomName').value = '';
+    document.getElementById('customRoomPax').value  = '';
+    document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+    _selectedPresetName = null;
+    _selectedPresetPax  = null;
+    document.getElementById('addRoomTypeModal').classList.add('open');
+}
+
+function closeAddRoomTypeModal() {
+    document.getElementById('addRoomTypeModal').classList.remove('open');
+}
+
+function closeAddRoomTypeModalOutside(e) {
+    if (e.target === document.getElementById('addRoomTypeModal')) closeAddRoomTypeModal();
+}
+
+function selectPreset(name, pax, el) {
+    document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    _selectedPresetName = name;
+    _selectedPresetPax  = pax;
+    // Fill custom fields too for clarity
+    document.getElementById('customRoomName').value = name;
+    document.getElementById('customRoomPax').value  = pax;
+}
+
+function clearPresetSelection() {
+    document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+    _selectedPresetName = null;
+    _selectedPresetPax  = null;
+}
+
+function confirmAddRoomType() {
+    const nameRaw = document.getElementById('customRoomName').value.trim().toUpperCase();
+    const paxVal  = parseInt(document.getElementById('customRoomPax').value);
+
+    if (!nameRaw) { _flashInput('customRoomName'); return; }
+    if (!paxVal || paxVal < 1 || paxVal > 99) { _flashInput('customRoomPax'); return; }
+
+    // Check for duplicates
+    const existing = Array.from(document.querySelectorAll('#roomLayoutBoxes .room-type-box'))
+                         .map(b => b.dataset.type);
+    if (existing.includes(nameRaw)) {
+        _flashInput('customRoomName', '#fef3c7');
+        document.getElementById('customRoomName').placeholder = 'Already exists!';
+        setTimeout(() => document.getElementById('customRoomName').placeholder = 'Name (e.g. VIP)', 1500);
+        return;
+    }
+
+    _addRoomTypeBox(nameRaw, paxVal);
+    closeAddRoomTypeModal();
+}
+
+function _flashInput(id, color) {
+    const el = document.getElementById(id);
+    const orig = el.style.borderColor;
+    el.style.borderColor = color || '#ef4444';
+    el.focus();
+    setTimeout(() => el.style.borderColor = orig, 800);
+}
+
+function _addRoomTypeBox(typeName, paxCount) {
+    const container = document.getElementById('roomLayoutBoxes');
+    const existingCount = container.querySelectorAll('.room-type-box').length;
+
+    const box = document.createElement('div');
+    box.className = 'room-type-box custom-type';
+    box.setAttribute('draggable', 'true');
+    box.dataset.type   = typeName;
+    box.dataset.pax    = paxCount;
+    box.dataset.custom = 'true';
+
+    const uid = 'chk_' + typeName.replace(/[^A-Z0-9]/g, '_') + '_' + Date.now();
+
+    box.innerHTML = `
+        <span class="priority-badge">${existingCount + 1}</span>
+        <button class="remove-room-btn" onclick="removeCustomRoomType(this)" title="Remove">✕</button>
+        <input type="checkbox" class="room-type-checkbox" id="${uid}" checked onchange="calculateRoomLayout()">
+        <div>
+            <div class="room-type-label">${typeName}</div>
+            <div class="room-type-pax">${paxCount} pax</div>
+        </div>
+    `;
+
+    // Mark as checked visually
+    box.classList.add('checked');
+
+    // Attach checkbox toggle style
+    const chk = box.querySelector('.room-type-checkbox');
+    chk.addEventListener('change', function() {
+        box.classList.toggle('checked', this.checked);
+    });
+
+    container.appendChild(box);
+
+    // Re-attach all drag events (includes new box)
+    _reAttachAllDragEvents();
+    _updateAllPriorityBadges();
+    calculateRoomLayout();
+}
+
+function removeCustomRoomType(btn) {
+    const box = btn.closest('.room-type-box');
+    if (!box) return;
+    box.remove();
+    _updateAllPriorityBadges();
+    calculateRoomLayout();
+}
+
+function _updateAllPriorityBadges() {
+    const boxes = document.querySelectorAll('#roomLayoutBoxes .room-type-box');
+    boxes.forEach((box, i) => {
+        const badge = box.querySelector('.priority-badge');
+        if (badge) badge.textContent = i + 1;
+    });
+}
+
+function _reAttachAllDragEvents() {
+    let dragSrc = null;
+    const boxes = document.querySelectorAll('#roomLayoutBoxes .room-type-box');
+    boxes.forEach(box => {
+        // Clone to remove old listeners, then re-add
+        const newBox = box.cloneNode(true);
+        box.parentNode.replaceChild(newBox, box);
+    });
+    // Re-add fresh drag listeners to all boxes
+    document.querySelectorAll('#roomLayoutBoxes .room-type-box').forEach(box => {
+        box.addEventListener('dragstart', function(e) {
+            dragSrc = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+        box.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.room-type-box').forEach(b => b.classList.remove('drag-over'));
+            _updateAllPriorityBadges();
+            calculateRoomLayout();
+        });
+        box.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (this !== dragSrc) {
+                document.querySelectorAll('.room-type-box').forEach(b => b.classList.remove('drag-over'));
+                this.classList.add('drag-over');
+            }
+        });
+        box.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+        box.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (this !== dragSrc) {
+                const container = document.getElementById('roomLayoutBoxes');
+                const allBoxes  = Array.from(container.querySelectorAll('.room-type-box'));
+                const srcIdx    = allBoxes.indexOf(dragSrc);
+                const tgtIdx    = allBoxes.indexOf(this);
+                if (srcIdx < tgtIdx) container.insertBefore(dragSrc, this.nextSibling);
+                else container.insertBefore(dragSrc, this);
+                this.classList.remove('drag-over');
+            }
+        });
+        // Checkbox style
+        const chk = box.querySelector('.room-type-checkbox');
+        if (chk) {
+            chk.addEventListener('change', function() {
+                box.classList.toggle('checked', this.checked);
+                calculateRoomLayout();
+            });
+        }
+        // Remove button
+        const rmBtn = box.querySelector('.remove-room-btn');
+        if (rmBtn) {
+            rmBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                box.remove();
+                _updateAllPriorityBadges();
+                calculateRoomLayout();
+            });
+        }
+    });
+}
+// ===== END ADD ROOM TYPE LOGIC =====
+
 console.log('✅ OCR.space + Claude AI Engine v4.0 loaded');
 </script>
 <!-- ===== END OCR ENGINE v4.0 ===== -->
@@ -9008,6 +9614,34 @@ function copyEmailForm(index) {
 </script>
 
 
+<!-- ===== Add Room Type Modal ===== -->
+<div id="addRoomTypeModal" onclick="closeAddRoomTypeModalOutside(event)">
+    <div class="add-room-modal-box">
+        <div class="add-room-modal-title">🛏️ Add Room Type - إضافة نوع غرفة</div>
+        
+        <div style="font-size:0.78rem; color:#64748b; margin-bottom:10px; font-weight:600;">QUICK PRESETS - اختيار سريع</div>
+        <div class="add-room-presets" id="roomTypePresets">
+            <div class="preset-chip" onclick="selectPreset('SGL',1,this)">SGL — 1 pax</div>
+            <div class="preset-chip" onclick="selectPreset('6-PAX',6,this)">6-PAX — 6 pax</div>
+            <div class="preset-chip" onclick="selectPreset('7-PAX',7,this)">7-PAX — 7 pax</div>
+            <div class="preset-chip" onclick="selectPreset('8-PAX',8,this)">8-PAX — 8 pax</div>
+            <div class="preset-chip" onclick="selectPreset('FAMILY',6,this)">FAMILY — 6 pax</div>
+            <div class="preset-chip" onclick="selectPreset('SUITE',2,this)">SUITE — 2 pax</div>
+        </div>
+
+        <div style="font-size:0.78rem; color:#64748b; margin-bottom:10px; font-weight:600;">OR CUSTOM - أو مخصص</div>
+        <div class="add-room-custom-row">
+            <input type="text" id="customRoomName" placeholder="Name (e.g. VIP)" maxlength="8" oninput="clearPresetSelection()">
+            <input type="number" id="customRoomPax" placeholder="Pax" min="1" max="99" style="width:70px; flex:none;" oninput="clearPresetSelection()">
+        </div>
+
+        <div class="add-room-modal-actions">
+            <button class="modal-btn-add" onclick="confirmAddRoomType()">✅ Add Room Type</button>
+            <button class="modal-btn-cancel" onclick="closeAddRoomTypeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+<!-- ===== END Add Room Type Modal ===== -->
 
 </body>
 </html>
