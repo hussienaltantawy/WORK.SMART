@@ -2279,6 +2279,148 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+
+/* Hotel Codes Search Tool */
+.hotel-code-shell {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+    border: 1px solid #dbeafe;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 8px 28px rgba(30, 58, 138, 0.08);
+}
+.hotel-code-intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+.hotel-code-intro h3 { color: #1e3a8a; font-size: 1rem; margin-bottom: 6px; }
+.hotel-code-intro p { color: #64748b; font-size: 0.82rem; line-height: 1.65; margin: 0; }
+.hotel-code-intro-ar {
+    font-family: 'Cairo', sans-serif;
+    border-left: 1px solid #e2e8f0;
+    padding-left: 22px;
+}
+.hotel-code-search-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: stretch;
+}
+.hotel-code-input-wrap { position: relative; }
+.hotel-code-search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; font-size: 1rem;
+}
+#hotelCodeSearchInput {
+    width: 100%; height: 54px; padding: 0 48px 0 48px !important;
+    border: 2px solid #cbd5e1; border-radius: 14px; background: #ffffff;
+    color: #0f172a; font: 800 1.05rem/1 'Poppins', sans-serif;
+    letter-spacing: 1.2px; text-transform: uppercase; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+#hotelCodeSearchInput:focus {
+    border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, .13);
+}
+.hotel-code-clear {
+    position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+    width: 34px; height: 34px; border: 0; border-radius: 9px;
+    background: #f1f5f9; color: #64748b; cursor: pointer; font-weight: 800;
+}
+.hotel-code-clear:hover { background: #fee2e2; color: #dc2626; }
+.hotel-code-search-btn {
+    min-width: 150px; border: 0; border-radius: 14px; padding: 0 22px;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb); color: #ffffff;
+    font-weight: 800; cursor: pointer; box-shadow: 0 5px 15px rgba(37, 99, 235, .24);
+    transition: transform .2s, box-shadow .2s;
+}
+.hotel-code-search-btn:hover {
+    transform: translateY(-1px); box-shadow: 0 8px 20px rgba(37, 99, 235, .3);
+}
+.hotel-code-meta, .hotel-code-examples {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 13px;
+}
+.hotel-code-meta span {
+    background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;
+    border-radius: 999px; padding: 5px 10px; font-size: .72rem; font-weight: 700;
+}
+.hotel-code-examples { color: #64748b; font-size: .76rem; font-weight: 700; }
+.hotel-code-examples button {
+    border: 1px solid #cbd5e1; border-radius: 8px; background: #ffffff;
+    color: #1e3a8a; padding: 5px 10px; font-weight: 800; cursor: pointer;
+}
+.hotel-code-examples button:hover { border-color: #3b82f6; background: #eff6ff; }
+.hotel-code-results { margin-top: 20px; }
+.hotel-code-summary {
+    display: flex; justify-content: space-between; gap: 10px; align-items: center;
+    padding: 12px 14px; margin-bottom: 12px; border-radius: 12px;
+    background: #eff6ff; color: #1e3a8a; font-size: .82rem; font-weight: 800;
+}
+.hotel-code-summary.warning { background: #fff7ed; color: #9a3412; }
+.hotel-code-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.hotel-code-card {
+    background: #ffffff; border: 1px solid #dbe3ee; border-radius: 15px; padding: 17px;
+    box-shadow: 0 4px 13px rgba(15, 23, 42, .06); position: relative; overflow: hidden;
+}
+.hotel-code-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+    background: linear-gradient(180deg, #1e3a8a, #3b82f6);
+}
+.hotel-code-card.prefix::before { background: linear-gradient(180deg, #d97706, #f59e0b); }
+.hotel-code-card.possible::before { background: linear-gradient(180deg, #64748b, #94a3b8); }
+.hotel-code-card-head {
+    display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 14px;
+}
+.hotel-code-card h4 { color: #0f172a; font-size: 1rem; line-height: 1.4; margin: 0; }
+.hotel-code-hotel-ar {
+    display: block; color: #475569; font: 700 .82rem/1.5 'Cairo', sans-serif; margin-top: 2px;
+}
+.hotel-code-badge {
+    flex: 0 0 auto; border-radius: 999px; padding: 5px 9px; background: #dcfce7;
+    color: #166534; font-size: .66rem; font-weight: 900; text-transform: uppercase;
+}
+.hotel-code-badge.prefix { background: #fef3c7; color: #92400e; }
+.hotel-code-badge.possible { background: #e2e8f0; color: #475569; }
+.hotel-code-value {
+    display: inline-flex; align-items: center; border-radius: 10px; background: #1e3a8a;
+    color: #ffffff; padding: 8px 13px; font-size: 1rem; font-weight: 900;
+    letter-spacing: 1.3px; margin-bottom: 13px; word-break: break-all;
+}
+.hotel-code-details { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.hotel-code-detail {
+    background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 11px; min-width: 0;
+}
+.hotel-code-detail-label {
+    display: block; color: #64748b; font-size: .65rem; font-weight: 800;
+    text-transform: uppercase; margin-bottom: 3px;
+}
+.hotel-code-detail-value {
+    display: block; color: #0f172a; font-size: .82rem; font-weight: 700;
+    line-height: 1.45; overflow-wrap: anywhere;
+}
+.hotel-code-source { margin-top: 10px; color: #7c3aed; font-size: .7rem; font-weight: 800; }
+.hotel-code-empty {
+    min-height: 160px; border: 2px dashed #cbd5e1; border-radius: 15px;
+    background: rgba(248, 250, 252, .75); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px; color: #64748b;
+    text-align: center; padding: 22px;
+}
+.hotel-code-empty-icon { font-size: 2rem; }
+.hotel-code-empty strong { color: #334155; }
+@media (max-width: 760px) {
+    .hotel-code-intro { grid-template-columns: 1fr; }
+    .hotel-code-intro-ar { border-left: 0; border-top: 1px solid #e2e8f0; padding-left: 0; padding-top: 14px; }
+    .hotel-code-search-row, .hotel-code-grid { grid-template-columns: 1fr; }
+    .hotel-code-search-btn { height: 48px; }
+}
+@media (max-width: 480px) {
+    .hotel-code-shell { padding: 16px 12px; }
+    .hotel-code-details { grid-template-columns: 1fr; }
+    .hotel-code-summary { align-items: flex-start; flex-direction: column; }
+}
+
 </style>
 
 <style>
@@ -2449,6 +2591,7 @@ document.addEventListener("DOMContentLoaded",()=>{
                 <a class="nav-link" href="#tasks">✅ Tasks</a>
                 <a class="nav-link" href="#notes">📝 Notes</a>
                 <a class="nav-link" href="#email">✉️ Email</a>
+                <a class="nav-link" href="#hotel-codes">🏷️ Hotel Codes</a>
             </div>
         </nav>
         
@@ -3496,6 +3639,63 @@ document.addEventListener("DOMContentLoaded",()=>{
             <div id="emailFormsContainer"></div>
         </div>
         
+
+        <!-- Hotel Codes Search Tool -->
+        <div class="tool-box" id="hotel-codes">
+            <div class="tool-title">🏷️ Hotel Codes - رموز الفنادق</div>
+            <div class="hotel-code-shell">
+                <div class="hotel-code-intro">
+                    <div>
+                        <h3>Find the hotel, room type and view by code</h3>
+                        <p>Enter a complete hotel room code. The tool also recognizes shared codes and prefix rules.</p>
+                    </div>
+                    <div class="hotel-code-intro-ar" dir="rtl">
+                        <h3>اعرف الفندق ونوع الغرفة والإطلالة من الرمز</h3>
+                        <p>أدخل كود الغرفة كاملاً، وسيعرض النظام جميع النتائج المطابقة وقواعد بداية الكود.</p>
+                    </div>
+                </div>
+
+                <div class="hotel-code-search-row">
+                    <div class="hotel-code-input-wrap">
+                        <span class="hotel-code-search-icon">🔎</span>
+                        <input
+                            type="text"
+                            id="hotelCodeSearchInput"
+                            placeholder="Enter code — مثال: SJC"
+                            autocomplete="off"
+                            spellcheck="false"
+                            maxlength="30"
+                            oninput="searchHotelCode()"
+                            onkeydown="if(event.key==='Enter'){searchHotelCode(true)}"
+                        >
+                        <button class="hotel-code-clear" type="button" onclick="clearHotelCodeSearch()" aria-label="Clear search">✕</button>
+                    </div>
+                    <button class="hotel-code-search-btn" type="button" onclick="searchHotelCode(true)">Search - بحث</button>
+                </div>
+
+                <div class="hotel-code-meta">
+                    <span>📚 136 exact codes</span>
+                    <span>🔤 5 prefix rules</span>
+                    <span>🏨 10 hotels</span>
+                </div>
+
+                <div class="hotel-code-examples">
+                    <span>Try:</span>
+                    <button type="button" onclick="setHotelCodeExample('SJC')">SJC</button>
+                    <button type="button" onclick="setHotelCodeExample('STD')">STD</button>
+                    <button type="button" onclick="setHotelCodeExample('KGC')">KGC</button>
+                    <button type="button" onclick="setHotelCodeExample('OT2NHS')">OT2NHS</button>
+                </div>
+
+                <div id="hotelCodeResults" class="hotel-code-results" aria-live="polite">
+                    <div class="hotel-code-empty">
+                        <div class="hotel-code-empty-icon">🏷️</div>
+                        <strong>Enter a hotel code to search</strong>
+                        <span dir="rtl">اكتب كود الفندق أو الغرفة لعرض معناه</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 <!-- Footer -->
         <footer>
             <div class="footer-content">⚡ THIS APP IS POWERED BY</div>
@@ -9610,6 +9810,149 @@ function copyEmailForm(index) {
         }    }).catch(err => {
         console.error('Failed to copy:', err);
     });
+}
+</script>
+
+
+<script>
+/* Hotel Codes Database — embedded from the supplied workbook for full offline use */
+const hotelCodeData = [{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Junior Suite","view":"City View","codes":["SJC"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Suite","view":"City View","codes":["STF"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Suite","view":"Haram View","codes":["STD"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Suite","view":"Partial Kaaba View","codes":["STE"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Suite","view":"Kaaba Premier","codes":["STC"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Suite","view":"Deluxe Kaaba View","codes":["STA"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Presidential Suite","view":"City View","codes":["PSSUP"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Presidential Suite","view":"Kaaba View","codes":["SBA"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Royal Suite","view":"Kaaba View","codes":["S2BER"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Signature Villa","view":"Haram View","codes":["VCB"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Villa","view":"City View","codes":["VCE"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Diplomatic Suite","view":"Kaaba View","codes":["SWA"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Imperial Suite","view":"Kaaba View","codes":["SWB"],"prefixes":[],"ruleText":""},{"hotel":"Raffles Hotel","hotelAr":"فندق رافلز","source":"","unit":"Majestic Suite","view":"Kaaba View","codes":["SWC"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة","view":"سيتي فيو","codes":["CK1N","CD2N","CD2XN","CT3N","OT2NC"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة","view":"حرم فيو","codes":["DK1N","DD2N","OT2HN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة","view":"كعبة فيو","codes":["HD2N","OT2NK"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت","view":"سيتي فيو","codes":["OT2NCS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت","view":"حرم فيو","codes":["OT2NHS","OT4NHS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت","view":"كعبة فيو","codes":["JK1KN","OT2NKS","OK1NKS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفتين وصالة","view":"حرم فيو","codes":["PK1HN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفتين وصالة","view":"كعبة فيو","codes":["PK2KN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة جولد","view":"سيتي فيو","codes":["ED2N"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة جولد","view":"حرم فيو","codes":["FD2N"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفة جولد","view":"كعبة فيو","codes":["GD2N"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت جولد","view":"سيتي فيو","codes":["QK1FCN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت جولد","view":"حرم فيو","codes":["QK1FHN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"جنيور سويت جولد","view":"كعبة فيو","codes":["QK1FKN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفتين وصالة جولد","view":"سيتي فيو","codes":["UK1FCN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفتين وصالة جولد","view":"حرم فيو","codes":["FK1FHN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"Legacy codes / الرموز القديمة","unit":"غرفتين وصالة جولد","view":"كعبة فيو","codes":["FK1FKN"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة","view":"سيتي فيو","codes":["KGCZ","DBCZ","DBACI","TRCZ","AWC"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة","view":"حرم فيو","codes":["DBAMV","DBAGS","DBE"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة","view":"كعبة فيو","codes":["DBBZ","DBEGS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت","view":"سيتي فيو","codes":["DBCPS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت","view":"حرم فيو","codes":["DBERV"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت","view":"كعبة فيو","codes":["SLC","STB","STD"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفتين وصالة","view":"حرم فيو","codes":["STC","SRB"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفتين وصالة","view":"كعبة فيو","codes":["SBA","SRA"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة جولد","view":"سيتي فيو","codes":["DBAPS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة جولد","view":"حرم فيو","codes":["DBCGS"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفة جولد","view":"كعبة فيو","codes":["DBCOV"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت جولد","view":"سيتي فيو","codes":["SRE"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت جولد","view":"حرم فيو","codes":["SRP"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"جنيور سويت جولد","view":"كعبة فيو","codes":["SUB"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفتين وصالة جولد","view":"سيتي فيو","codes":["SIA"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفتين وصالة جولد","view":"حرم فيو","codes":["SLA"],"prefixes":[],"ruleText":""},{"hotel":"Fairmont Hotel","hotelAr":"فندق فيرمونت","source":"New codes / الرموز الجديدة","unit":"غرفتين وصالة جولد","view":"كعبة فيو","codes":["SLB"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"غرفة","view":"سيتي فيو","codes":["KGC","TWD","DBACI","KGAGS"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"غرفة","view":"حرم فيو","codes":["KGD","DBAOV","DBAGS","KGALVZ"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"غرفة","view":"كعبة فيو جزئي","codes":["KGDGS","D2D","TRD","KGAOS"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"غرفة","view":"كعبة فيو بريمير","codes":["KGBBC","KGACF"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"جنيور سويت","view":"سيتي فيو","codes":["SKE"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"جنيور سويت","view":"حرم فيو","codes":["SRD"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Makkah","hotelAr":"فندق سويس اوتيل مكة","source":"","unit":"جنيور سويت","view":"كعبة فيو","codes":["SKD"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"غرفة","view":"بدون اطلالة","codes":["DBACI","S4C"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"غرفة","view":"سيتي فيو","codes":["TWD","KGAGS"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"غرفة","view":"حرم فيو","codes":["KGD","DBAOV","DBAGS","KGALVZ"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"غرفة","view":"كعبة فيو جزئي","codes":["TWDCI","TRB"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"غرفة","view":"كعبة فيو بريمير","codes":["KGBBC","KGACF","TRA"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"جنيور سويت","view":"سيتي فيو","codes":["SKE","SAD","STC","AP1"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"جنيور سويت","view":"حرم فيو","codes":["SRD","STB","ALC"],"prefixes":[],"ruleText":""},{"hotel":"Swissôtel Al Maqam","hotelAr":"فندق سويس المقام","source":"","unit":"جنيور سويت","view":"كعبة فيو","codes":["SKD","SKDZ"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفة","view":"سيتي فيو","codes":["TWD","S4C"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفة","view":"حرم فيو جزئي","codes":["TWB"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفة","view":"كعبة فيو جزئي","codes":["TWA"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"جنيور سويت","view":"سيتي فيو","codes":["SWD"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفتين وصالة","view":"سيتي فيو","codes":["SBC","SNE"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفتين وصالة","view":"حرم فيو جزئي","codes":["SNC"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفتين وصالة","view":"حرم فيو","codes":["SBB"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفتين وصالة","view":"كعبة فيو جزئي","codes":["SNB"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"غرفتين وصالة","view":"كعبة فيو","codes":["SBA"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"ثلاث عرف وصالة","view":"سيتي فيو","codes":["STD"],"prefixes":[],"ruleText":""},{"hotel":"Pullman ZamZam Makkah","hotelAr":"فندق بولمان زمزم","source":"","unit":"ثلاث عرف وصالة","view":"كعبة فيو","codes":["STA"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"داخلى اسمول","view":"","codes":["SCTV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"حرم اسمول","view":"","codes":["DXHVS"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"داخلى استندر","view":"","codes":["SUPD"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"حرم مباشر","view":"","codes":["DXHV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"مطل جانبى حرم","view":"","codes":["SDHV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"غرفه كعبه جزئى","view":"","codes":["PDXKV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"كعبه مباشر","view":"","codes":["DXKV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"استديو كعبه جزئى","view":"","codes":["PSTKV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah First Tower","hotelAr":"فندق الصفوة الأول","source":"","unit":"استديو كعبه مباشر","view":"","codes":["STDK"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Tower 3","hotelAr":"فندق الصفوة البرج الثالث","source":"","unit":"داخلى اسمول","view":"","codes":["SNV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Tower 3","hotelAr":"فندق الصفوة البرج الثالث","source":"","unit":"داخلي","view":"","codes":["DNV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Tower 3","hotelAr":"فندق الصفوة البرج الثالث","source":"","unit":"جانبي","view":"","codes":["CTV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Tower 3","hotelAr":"فندق الصفوة البرج الثالث","source":"","unit":"استديو جانبي","view":"","codes":["STCV"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Orchid","hotelAr":"فندق الصفوة اوركيد","source":"","unit":"داخلى","view":"داخلى","codes":["SUPUD"],"prefixes":[],"ruleText":""},{"hotel":"Al Safwah Orchid","hotelAr":"فندق الصفوة اوركيد","source":"","unit":"جانبي","view":"جانبي","codes":["SHDH"],"prefixes":[],"ruleText":""},{"hotel":"Le Méridien Towers Makkah","hotelAr":"فندق أبراج ميرديان كدي","source":"","unit":"الغرف","view":"","codes":[],"prefixes":["K"],"ruleText":"تبدأ بحرف K"},{"hotel":"Le Méridien Towers Makkah","hotelAr":"فندق أبراج ميرديان كدي","source":"","unit":"الجنيور سويت","view":"","codes":[],"prefixes":["O","E"],"ruleText":"يبدأ بحرف O او E"},{"hotel":"Le Méridien Towers Makkah","hotelAr":"فندق أبراج ميرديان كدي","source":"","unit":"الرويال سويت","view":"","codes":[],"prefixes":["V","P"],"ruleText":"يبدأ بحرف V او P"}];
+
+function normalizeHotelCode(value) {
+    return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+function hcEscape(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+function setHotelCodeExample(code) {
+    const input = document.getElementById('hotelCodeSearchInput');
+    if (!input) return;
+    input.value = code;
+    input.focus();
+    searchHotelCode(true);
+}
+function clearHotelCodeSearch() {
+    const input = document.getElementById('hotelCodeSearchInput');
+    const results = document.getElementById('hotelCodeResults');
+    if (input) { input.value = ''; input.focus(); }
+    if (results) {
+        results.innerHTML = `
+            <div class="hotel-code-empty">
+                <div class="hotel-code-empty-icon">🏷️</div>
+                <strong>Enter a hotel code to search</strong>
+                <span dir="rtl">اكتب كود الفندق أو الغرفة لعرض معناه</span>
+            </div>`;
+    }
+}
+function buildHotelCodeMatch(row, enteredCode, matchType, matchedCode) {
+    return { ...row, enteredCode, matchType, matchedCode };
+}
+function searchHotelCode(forceSearch) {
+    const input = document.getElementById('hotelCodeSearchInput');
+    const results = document.getElementById('hotelCodeResults');
+    if (!input || !results) return;
+
+    const raw = input.value.trim();
+    const query = normalizeHotelCode(raw);
+    if (!query) { clearHotelCodeSearch(); return; }
+
+    const exact = [];
+    const prefix = [];
+    const possible = [];
+    hotelCodeData.forEach(row => {
+        (row.codes || []).forEach(code => {
+            const normalized = normalizeHotelCode(code);
+            if (normalized === query) {
+                exact.push(buildHotelCodeMatch(row, query, 'exact', code));
+            } else if (query.length >= 2 && (normalized.startsWith(query) || normalized.includes(query))) {
+                possible.push(buildHotelCodeMatch(row, query, 'possible', code));
+            }
+        });
+        (row.prefixes || []).forEach(rulePrefix => {
+            const normalizedPrefix = normalizeHotelCode(rulePrefix);
+            if (query.startsWith(normalizedPrefix)) {
+                prefix.push(buildHotelCodeMatch(row, query, 'prefix', normalizedPrefix));
+            }
+        });
+    });
+
+    let matches = exact.length ? exact.concat(prefix) : prefix;
+    let mode = exact.length ? 'exact' : (prefix.length ? 'prefix' : 'none');
+    if (!matches.length && query.length >= 2) {
+        const seen = new Set();
+        matches = possible.filter(item => {
+            const key = [item.hotel, item.unit, item.view, item.matchedCode, item.source].join('|');
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).slice(0, 24);
+        if (matches.length) mode = 'possible';
+    }
+
+    if (!matches.length) {
+        results.innerHTML = `
+            <div class="hotel-code-empty">
+                <div class="hotel-code-empty-icon">🔍</div>
+                <strong>No hotel code found for “${hcEscape(raw)}”</strong>
+                <span dir="rtl">لم يتم العثور على هذا الكود. تأكد من كتابته كاملاً وبشكل صحيح.</span>
+            </div>`;
+        return;
+    }
+
+    const unique = [];
+    const uniqueKeys = new Set();
+    matches.forEach(item => {
+        const key = [item.hotel, item.unit, item.view, item.matchedCode, item.matchType, item.source].join('|');
+        if (!uniqueKeys.has(key)) { uniqueKeys.add(key); unique.push(item); }
+    });
+
+    const summaryClass = unique.length > 1 ? 'hotel-code-summary warning' : 'hotel-code-summary';
+    const summaryText = mode === 'possible'
+        ? `${unique.length} possible match${unique.length === 1 ? '' : 'es'}`
+        : `${unique.length} match${unique.length === 1 ? '' : 'es'} found`;
+    const summaryAr = unique.length > 1
+        ? 'قد يُستخدم هذا الرمز لأكثر من فندق أو نوع غرفة'
+        : 'تم العثور على نتيجة مطابقة';
+
+    const cards = unique.map(item => {
+        const typeClass = item.matchType === 'prefix' ? 'prefix' : (item.matchType === 'possible' ? 'possible' : '');
+        const badgeText = item.matchType === 'prefix' ? 'Prefix rule' : (item.matchType === 'possible' ? 'Possible' : 'Exact match');
+        const displayedCode = item.matchType === 'prefix'
+            ? `${item.enteredCode} · starts with ${item.matchedCode}` : item.matchedCode;
+        const source = item.source ? `<div class="hotel-code-source">ℹ️ ${hcEscape(item.source)}</div>` : '';
+        const view = item.view || 'Not specified / غير محدد';
+        return `
+            <article class="hotel-code-card ${typeClass}">
+                <div class="hotel-code-card-head">
+                    <div>
+                        <h4>${hcEscape(item.hotel)}</h4>
+                        <span class="hotel-code-hotel-ar" dir="rtl">${hcEscape(item.hotelAr)}</span>
+                    </div>
+                    <span class="hotel-code-badge ${typeClass}">${badgeText}</span>
+                </div>
+                <div class="hotel-code-value">${hcEscape(displayedCode)}</div>
+                <div class="hotel-code-details">
+                    <div class="hotel-code-detail">
+                        <span class="hotel-code-detail-label">Room / نوع الوحدة</span>
+                        <span class="hotel-code-detail-value">${hcEscape(item.unit)}</span>
+                    </div>
+                    <div class="hotel-code-detail">
+                        <span class="hotel-code-detail-label">View / الإطلالة</span>
+                        <span class="hotel-code-detail-value">${hcEscape(view)}</span>
+                    </div>
+                </div>
+                ${source}
+            </article>`;
+    }).join('');
+
+    results.innerHTML = `
+        <div class="${summaryClass}">
+            <span>${summaryText} for <strong>${hcEscape(query)}</strong></span>
+            <span dir="rtl">${summaryAr}</span>
+        </div>
+        <div class="hotel-code-grid">${cards}</div>`;
 }
 </script>
 
